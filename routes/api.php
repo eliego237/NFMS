@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\TrainingController;
+use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\StudentController;
 
 // Routes publiques
@@ -18,5 +20,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::apiResource('students', StudentController::class);
+
+    Route::apiResource('trainings', TrainingController::class);
+
+    Route::apiResource('enrollments', EnrollmentController::class);
 
 });
