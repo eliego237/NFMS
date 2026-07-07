@@ -6,26 +6,52 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreEnrollmentRequest extends FormRequest
 {
+    /**
+     * Détermine si l'utilisateur est autorisé.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Règles de validation.
+     */
     public function rules(): array
     {
         return [
 
-            'student_id' => 'required|exists:students,id',
+            'student_id' => [
+                'required',
+                'exists:students,id',
+            ],
 
-            'training_id' => 'required|exists:trainings,id',
+            'training_id' => [
+                'required',
+                'exists:trainings,id',
+            ],
 
-            'registration_number' => 'required|string|max:100|unique:enrollments',
+            'discount' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
 
-            'registration_date' => 'required|date',
+            'academic_year' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
 
-            'status' => 'nullable|string',
+            'enrolled_at' => [
+                'required',
+                'date',
+            ],
 
-            'notes' => 'nullable|string',
+            'notes' => [
+                'nullable',
+                'string',
+            ],
 
         ];
     }

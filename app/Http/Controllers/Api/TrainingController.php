@@ -10,70 +10,81 @@ use App\Models\Training;
 class TrainingController extends Controller
 {
     /**
-     * Liste des filières
+     * Liste des formations.
      */
     public function index()
     {
-        return response()->json(
-            Training::latest()->get()
-        );
+        $trainings = Training::with('modules')
+            ->orderBy('category')
+            ->orderBy('title')
+            ->get();
+
+        return response()->json($trainings);
     }
 
     /**
-     * Créer une filière
+     * Créer une formation.
      */
     public function store(StoreTrainingRequest $request)
     {
         $training = Training::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'price' => $request->price,
-            'duration_months' => $request->duration_months,
-            'is_active' => $request->boolean('is_active', true),
+            'title'             => $request->title,
+            'category'          => $request->category,
+            'code'              => $request->code,
+            'description'       => $request->description,
+            'price'             => $request->price,
+            'duration_months'   => $request->duration_months,
+            'certificate'       => $request->certificate,
+            'is_active'         => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
-            'message' => 'Filière créée avec succès.',
-            'data' => $training
+            'message' => 'Formation créée avec succès.',
+            'data'    => $training,
         ], 201);
     }
 
     /**
-     * Afficher une filière
+     * Afficher une formation.
      */
     public function show(Training $training)
     {
-        return response()->json($training);
+        return response()->json(
+            $training->load('modules')
+        );
     }
 
     /**
-     * Modifier une filière
+     * Modifier une formation.
      */
     public function update(UpdateTrainingRequest $request, Training $training)
     {
         $training->update([
-            'title' => $request->title,
-            'description' => $request->description,
-            'price' => $request->price,
-            'duration_months' => $request->duration_months,
-            'is_active' => $request->boolean('is_active', true),
+            'title'             => $request->title,
+            'category'          => $request->category,
+            'code'              => $request->code,
+            'description'       => $request->description,
+            'price'             => $request->price,
+            'duration_months'   => $request->duration_months,
+            'certificate'       => $request->certificate,
+            'is_active'         => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
-            'message' => 'Filière modifiée avec succès.',
-            'data' => $training
+            'message' => 'Formation modifiée avec succès.',
+            'data'    => $training->fresh()->load('modules'),
         ]);
     }
 
     /**
-     * Supprimer une filière
+     * Supprimer une formation.
      */
     public function destroy(Training $training)
     {
         $training->delete();
 
         return response()->json([
-            'message' => 'Filière supprimée avec succès.'
+            'message' => 'Formation supprimée avec succès.',
         ]);
     }
 }

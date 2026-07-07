@@ -12,8 +12,42 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
+
             $table->id();
+
+            // Inscription concernée
+            $table->foreignId('enrollment_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            // Numéro du reçu
+            $table->string('receipt_number')->unique();
+
+            // Montant payé
+            $table->decimal('amount', 12, 2);
+
+            // Moyen de paiement
+            $table->foreignId('payment_method_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            // Date du paiement
+            $table->date('payment_date');
+
+            // Référence de transaction
+            $table->string('reference')->nullable();
+
+            // Observations
+            $table->text('notes')->nullable();
+
+            // Utilisateur ayant enregistré le paiement
+            $table->foreignId('received_by')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
             $table->timestamps();
+
+            $table->softDeletes();
         });
     }
 
