@@ -20,15 +20,17 @@ class ExpenseController extends Controller
             Expense::with([
                 'paymentMethod',
                 'recorder',
+                'cashTransaction',
             ])
-            ->latest()
+            ->latest('expense_date')
+            ->latest('id')
             ->get()
 
         );
     }
 
     /**
-     * Enregistrer une nouvelle dépense.
+     * Enregistrer une dépense.
      */
     public function store(StoreExpenseRequest $request)
     {
@@ -43,6 +45,7 @@ class ExpenseController extends Controller
             'data' => $expense->load([
                 'paymentMethod',
                 'recorder',
+                'cashTransaction',
             ])
 
         ], 201);
@@ -58,6 +61,7 @@ class ExpenseController extends Controller
             $expense->load([
                 'paymentMethod',
                 'recorder',
+                'cashTransaction',
             ])
 
         );
@@ -80,6 +84,7 @@ class ExpenseController extends Controller
             'data' => $expense->load([
                 'paymentMethod',
                 'recorder',
+                'cashTransaction',
             ])
 
         ]);

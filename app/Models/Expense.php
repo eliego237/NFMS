@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Expense extends Model
 {
@@ -62,5 +63,21 @@ class Expense extends Model
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * Transaction de caisse générée par cette dépense.
+     */
+    public function cashTransaction(): HasOne
+    {
+        return $this->hasOne(CashTransaction::class);
+    }
+
+    /**
+     * Vérifie si la dépense est importante.
+     */
+    public function isLargeExpense(float $threshold = 100000): bool
+    {
+        return $this->amount >= $threshold;
     }
 }

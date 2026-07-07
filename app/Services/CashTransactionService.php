@@ -49,7 +49,7 @@ class CashTransactionService
 
             'transaction_number' => $transactionNumber,
 
-            'type' => 'income',
+            'type' => 'Entrée',
 
             'category' => 'Paiement formation',
 
@@ -112,7 +112,7 @@ class CashTransactionService
 
             'transaction_number' => $transactionNumber,
 
-            'type' => 'expense',
+            'type' => 'Sortie',
 
             'category' => $expense->category,
 

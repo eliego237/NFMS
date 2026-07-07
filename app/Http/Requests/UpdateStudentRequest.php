@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreStudentRequest extends FormRequest
+class UpdateStudentRequest extends FormRequest
 {
     /**
      * Détermine si l'utilisateur est autorisé.
@@ -20,6 +20,8 @@ class StoreStudentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $studentId = $this->route('student')->id;
+
         return [
 
             /*
@@ -67,7 +69,7 @@ class StoreStudentRequest extends FormRequest
                 'nullable',
                 'email',
                 'max:255',
-                'unique:students,email',
+                Rule::unique('students', 'email')->ignore($studentId),
             ],
 
             'address' => [

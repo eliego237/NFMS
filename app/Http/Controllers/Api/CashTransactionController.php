@@ -3,10 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreCashTransactionRequest;
-use App\Http\Requests\UpdateCashTransactionRequest;
 use App\Models\CashTransaction;
-use Illuminate\Support\Facades\DB;
 
 class CashTransactionController extends Controller
 {
@@ -19,68 +16,15 @@ class CashTransactionController extends Controller
 
             CashTransaction::with([
                 'payment',
+                'expense',
                 'paymentMethod',
                 'recorder',
             ])
-            ->latest()
+            ->latest('transaction_date')
+            ->latest('id')
             ->get()
 
         );
-    }
-
-    /**
-     * Enregistrer une opération de caisse.
-     */
-    public function store(StoreCashTransactionRequest $request)
-    {
-        return DB::transaction(function () use ($request) {
-
-            // Génération du numéro de transaction
-            $nextNumber = (CashTransaction::max('id') ?? 0) + 1;
-
-            $transactionNumber = sprintf(
-                'CT-%s-%06d',
-                now()->year,
-                $nextNumber
-            );
-
-            $transaction = CashTransaction::create([
-
-                'transaction_number' => $transactionNumber,
-
-                'type' => $request->type,
-
-                'category' => $request->category,
-
-                'amount' => $request->amount,
-
-                'payment_method_id' => $request->payment_method_id,
-
-                'payment_id' => $request->payment_id,
-
-                'description' => $request->description,
-
-                'transaction_date' => $request->transaction_date,
-
-                'recorded_by' => auth()->id(),
-
-                'notes' => $request->notes,
-
-            ]);
-
-            return response()->json([
-
-                'message' => 'Transaction enregistrée avec succès.',
-
-                'transaction' => $transaction->load([
-                    'payment',
-                    'paymentMethod',
-                    'recorder',
-                ]),
-
-            ], 201);
-
-        });
     }
 
     /**
@@ -92,6 +36,7 @@ class CashTransactionController extends Controller
 
             $cashTransaction->load([
                 'payment',
+                'expense',
                 'paymentMethod',
                 'recorder',
             ])
@@ -100,34 +45,62 @@ class CashTransactionController extends Controller
     }
 
     /**
-     * Modifier une transaction.
+     * Entrées de caisse.
      */
-    public function update(UpdateCashTransactionRequest $request, CashTransaction $cashTransaction)
+    public function income()
     {
-        $cashTransaction->update($request->validated());
+        return response()->json(
 
-        return response()->json([
-
-            'message' => 'Transaction modifiée avec succès.',
-
-            'transaction' => $cashTransaction->fresh()->load([
+            CashTransaction::with([
                 'payment',
                 'paymentMethod',
                 'recorder',
-            ]),
+            ])
+            ->where('type', 'income')
+            ->latest('transaction_date')
+            ->get()
 
-        ]);
+        );
     }
 
     /**
-     * Supprimer une transaction.
+     * Sorties de caisse.
      */
-    public function destroy(CashTransaction $cashTransaction)
+    public function expenses()
     {
-        $cashTransaction->delete();
+        return response()->json(
+
+            CashTransaction::with([
+                'expense',
+                'paymentMethod',
+                'recorder',
+            ])
+            ->where('type', 'expense')
+            ->latest('transaction_date')
+            ->get()
+
+        );
+    }
+
+    /**
+     * Résumé de la caisse.
+     */
+    public function summary()
+    {
+        $income = CashTransaction::where('type', 'income')
+            ->sum('amount');
+
+        $expense = CashTransaction::where('type', 'expense')
+            ->sum('amount');
 
         return response()->json([
-            'message' => 'Transaction supprimée avec succès.',
+
+            'total_income' => $income,
+
+            'total_expense' => $expense,
+
+            'balance' => $income - $expense,
+
         ]);
     }
 }

@@ -6,40 +6,76 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('students', function (Blueprint $table) {
 
             $table->id();
 
-            // Informations personnelles
+            /*
+            |--------------------------------------------------------------------------
+            | Matricule
+            |--------------------------------------------------------------------------
+            */
+
             $table->string('matricule')->unique();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Informations personnelles
+            |--------------------------------------------------------------------------
+            */
+
             $table->string('first_name');
+
             $table->string('last_name');
+
             $table->enum('gender', ['M', 'F']);
+
             $table->date('birth_date')->nullable();
 
-            // Contacts
+            /*
+            |--------------------------------------------------------------------------
+            | Coordonnées
+            |--------------------------------------------------------------------------
+            */
+
             $table->string('phone');
-            $table->string('email')->nullable();
+
+            $table->string('email')->nullable()->unique();
+
             $table->string('address')->nullable();
+
             $table->string('emergency_contact')->nullable();
 
-            // Formation
-            $table->string('formation');
-            $table->date('registration_date');
+            /*
+            |--------------------------------------------------------------------------
+            | Photo
+            |--------------------------------------------------------------------------
+            */
 
-            // Photo
             $table->string('photo')->nullable();
 
-            // Statut
+            /*
+            |--------------------------------------------------------------------------
+            | Statut
+            |--------------------------------------------------------------------------
+            */
+
             $table->boolean('status')->default(true);
 
             $table->timestamps();
+
             $table->softDeletes();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('students');

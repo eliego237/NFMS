@@ -10,6 +10,9 @@ class CashTransaction extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Les attributs pouvant être remplis.
+     */
     protected $fillable = [
 
         'transaction_number',
@@ -48,7 +51,7 @@ class CashTransaction extends Model
     ];
 
     /**
-     * Paiement à l'origine de l'opération.
+     * Paiement à l'origine de la transaction.
      */
     public function payment(): BelongsTo
     {
@@ -56,7 +59,7 @@ class CashTransaction extends Model
     }
 
     /**
-     * Dépense à l'origine de l'opération.
+     * Dépense à l'origine de la transaction.
      */
     public function expense(): BelongsTo
     {
@@ -72,10 +75,26 @@ class CashTransaction extends Model
     }
 
     /**
-     * Utilisateur ayant enregistré l'opération.
+     * Utilisateur ayant enregistré la transaction.
      */
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * Vérifie si la transaction est une entrée.
+     */
+    public function isIncome(): bool
+    {
+        return $this->type === 'income';
+    }
+
+    /**
+     * Vérifie si la transaction est une sortie.
+     */
+    public function isExpense(): bool
+    {
+        return $this->type === 'expense';
     }
 }

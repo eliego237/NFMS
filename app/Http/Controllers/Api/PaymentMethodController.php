@@ -15,22 +15,34 @@ class PaymentMethodController extends Controller
     public function index()
     {
         return response()->json(
-            PaymentMethod::orderBy('name')->get()
+
+            PaymentMethod::withCount([
+                'payments',
+                'expenses',
+            ])
+            ->orderBy('name')
+            ->get()
+
         );
     }
 
     /**
-     * Enregistrer un nouveau moyen de paiement.
+     * Créer un moyen de paiement.
      */
     public function store(StorePaymentMethodRequest $request)
     {
         $paymentMethod = PaymentMethod::create(
+
             $request->validated()
+
         );
 
         return response()->json([
+
             'message' => 'Moyen de paiement créé avec succès.',
+
             'data' => $paymentMethod,
+
         ], 201);
     }
 
@@ -39,7 +51,14 @@ class PaymentMethodController extends Controller
      */
     public function show(PaymentMethod $paymentMethod)
     {
-        return response()->json($paymentMethod);
+        return response()->json(
+
+            $paymentMethod->load([
+                'payments',
+                'expenses',
+            ])
+
+        );
     }
 
     /**
@@ -48,12 +67,17 @@ class PaymentMethodController extends Controller
     public function update(UpdatePaymentMethodRequest $request, PaymentMethod $paymentMethod)
     {
         $paymentMethod->update(
+
             $request->validated()
+
         );
 
         return response()->json([
+
             'message' => 'Moyen de paiement modifié avec succès.',
-            'data' => $paymentMethod,
+
+            'data' => $paymentMethod->fresh(),
+
         ]);
     }
 
@@ -65,7 +89,19 @@ class PaymentMethodController extends Controller
         if ($paymentMethod->payments()->exists()) {
 
             return response()->json([
-                'message' => 'Impossible de supprimer ce moyen de paiement car il est déjà utilisé.'
+
+                'message' => 'Impossible de supprimer ce moyen de paiement car il est utilisé par des paiements.'
+
+            ], 422);
+
+        }
+
+        if ($paymentMethod->expenses()->exists()) {
+
+            return response()->json([
+
+                'message' => 'Impossible de supprimer ce moyen de paiement car il est utilisé par des dépenses.'
+
             ], 422);
 
         }
@@ -73,7 +109,9 @@ class PaymentMethodController extends Controller
         $paymentMethod->delete();
 
         return response()->json([
+
             'message' => 'Moyen de paiement supprimé avec succès.'
+
         ]);
     }
 }

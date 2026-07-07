@@ -6,44 +6,71 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Student;
-use Illuminate\Http\Request;
 
 class StudentController extends Controller
 {
     /**
-     * Afficher la liste des étudiants.
+     * Liste des étudiants.
      */
     public function index()
     {
-        $students = Student::orderBy('created_at', 'desc')->paginate(10);
+        return response()->json(
 
-        return response()->json($students);
+            Student::with([
+                'latestEnrollment.training',
+            ])
+            ->latest()
+            ->paginate(10)
+
+        );
     }
 
     /**
-     * Enregistrer un nouvel étudiant.
+     * Créer un étudiant.
      */
     public function store(StoreStudentRequest $request)
     {
         // Génération automatique du matricule
-        $lastStudent = Student::latest('id')->first();
+        $nextNumber = (Student::max('id') ?? 0) + 1;
 
-        if ($lastStudent) {
-            $number = intval(substr($lastStudent->matricule, -5)) + 1;
-        } else {
-            $number = 1;
-        }
-
-        $matricule = 'NF' . date('Y') . str_pad($number, 5, '0', STR_PAD_LEFT);
+        $matricule = sprintf(
+            'NF%s%05d',
+            now()->year,
+            $nextNumber
+        );
 
         $student = Student::create([
+
             'matricule' => $matricule,
-            ...$request->validated(),
+
+            'first_name' => $request->first_name,
+
+            'last_name' => $request->last_name,
+
+            'gender' => $request->gender,
+
+            'birth_date' => $request->birth_date,
+
+            'phone' => $request->phone,
+
+            'email' => $request->email,
+
+            'address' => $request->address,
+
+            'emergency_contact' => $request->emergency_contact,
+
+            'photo' => $request->photo,
+
+            'status' => $request->boolean('status', true),
+
         ]);
 
         return response()->json([
-            'message' => 'Étudiant enregistré avec succès.',
+
+            'message' => 'Étudiant créé avec succès.',
+
             'student' => $student,
+
         ], 201);
     }
 
@@ -52,7 +79,14 @@ class StudentController extends Controller
      */
     public function show(Student $student)
     {
-        return response()->json($student);
+        return response()->json(
+
+            $student->load([
+                'enrollments.training',
+                'enrollments.payments',
+            ])
+
+        );
     }
 
     /**
@@ -63,8 +97,11 @@ class StudentController extends Controller
         $student->update($request->validated());
 
         return response()->json([
+
             'message' => 'Étudiant modifié avec succès.',
-            'student' => $student,
+
+            'student' => $student->fresh(),
+
         ]);
     }
 
@@ -73,10 +110,23 @@ class StudentController extends Controller
      */
     public function destroy(Student $student)
     {
+        // Empêcher la suppression si l'étudiant possède des inscriptions
+        if ($student->enrollments()->exists()) {
+
+            return response()->json([
+
+                'message' => 'Impossible de supprimer un étudiant ayant des inscriptions.'
+
+            ], 422);
+
+        }
+
         $student->delete();
 
         return response()->json([
-            'message' => 'Étudiant supprimé avec succès.',
+
+            'message' => 'Étudiant supprimé avec succès.'
+
         ]);
     }
 }

@@ -33,10 +33,6 @@ class Student extends Model
 
         'emergency_contact',
 
-        'formation',
-
-        'registration_date',
-
         'photo',
 
         'status',
@@ -49,8 +45,6 @@ class Student extends Model
     protected $casts = [
 
         'birth_date' => 'date',
-
-        'registration_date' => 'date',
 
         'status' => 'boolean',
 
@@ -65,10 +59,28 @@ class Student extends Model
     }
 
     /**
-     * Nom complet.
+     * Nom complet de l'étudiant.
      */
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Dernière inscription.
+     */
+    public function latestEnrollment()
+    {
+        return $this->hasOne(Enrollment::class)->latestOfMany();
+    }
+
+    /**
+     * Vérifie si l'étudiant possède une inscription active.
+     */
+    public function hasActiveEnrollment(): bool
+    {
+        return $this->enrollments()
+            ->whereIn('status', ['pending', 'partial'])
+            ->exists();
     }
 }

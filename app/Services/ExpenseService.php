@@ -16,12 +16,6 @@ class ExpenseService
     {
         return DB::transaction(function () use ($data) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Génération du numéro de dépense
-            |--------------------------------------------------------------------------
-            */
-
             $prefix = Setting::getValue(
                 'expense_prefix',
                 'EXP'
@@ -35,12 +29,6 @@ class ExpenseService
                 now()->year,
                 $nextNumber
             );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Création de la dépense
-            |--------------------------------------------------------------------------
-            */
 
             $expense = Expense::create([
 
@@ -66,12 +54,6 @@ class ExpenseService
 
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Création automatique de l'écriture de caisse
-            |--------------------------------------------------------------------------
-            */
-
             CashTransactionService::recordExpense($expense);
 
             return $expense->fresh();
@@ -86,34 +68,69 @@ class ExpenseService
         array $data
     ): Expense {
 
-        $expense->update([
+        return DB::transaction(function () use ($expense, $data) {
 
-            'category' => $data['category'],
+            $expense->update([
 
-            'title' => $data['title'],
+                'category' => $data['category'],
 
-            'description' => $data['description'] ?? null,
+                'title' => $data['title'],
 
-            'amount' => $data['amount'],
+                'description' => $data['description'] ?? null,
 
-            'payment_method_id' => $data['payment_method_id'],
+                'amount' => $data['amount'],
 
-            'expense_date' => $data['expense_date'],
+                'payment_method_id' => $data['payment_method_id'],
 
-            'reference' => $data['reference'] ?? null,
+                'expense_date' => $data['expense_date'],
 
-            'notes' => $data['notes'] ?? null,
+                'reference' => $data['reference'] ?? null,
 
-        ]);
+                'notes' => $data['notes'] ?? null,
 
-        return $expense->fresh();
+            ]);
+
+            if ($expense->cashTransaction) {
+
+                $expense->cashTransaction->update([
+
+                    'category' => $expense->category,
+
+                    'amount' => $expense->amount,
+
+                    'payment_method_id' => $expense->payment_method_id,
+
+                    'description' => $expense->title,
+
+                    'transaction_date' => $expense->expense_date,
+
+                    'notes' => $expense->notes,
+
+                ]);
+
+            }
+
+            return $expense->fresh();
+        });
     }
 
     /**
-     * Suppression logique.
+     * Supprimer une dépense.
      */
-    public static function delete(Expense $expense): void
-    {
-        $expense->delete();
+    public static function delete(
+        Expense $expense
+    ): void {
+
+        DB::transaction(function () use ($expense) {
+
+            if ($expense->cashTransaction) {
+
+                $expense->cashTransaction->delete();
+
+            }
+
+            $expense->delete();
+
+        });
     }
 }

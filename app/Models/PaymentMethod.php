@@ -10,24 +10,50 @@ class PaymentMethod extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Les attributs pouvant être remplis.
+     */
     protected $fillable = [
+
         'name',
+
         'code',
+
         'is_active',
+
     ];
 
     /**
      * Conversion automatique des types.
      */
     protected $casts = [
+
         'is_active' => 'boolean',
+
     ];
 
     /**
-     * Un moyen de paiement possède plusieurs paiements.
+     * Les paiements utilisant ce moyen de paiement.
      */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Les dépenses utilisant ce moyen de paiement.
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    /**
+     * Nombre total d'utilisations.
+     */
+    public function getUsageCountAttribute(): int
+    {
+        return $this->payments()->count()
+            + $this->expenses()->count();
     }
 }

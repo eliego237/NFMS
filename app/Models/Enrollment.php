@@ -11,9 +11,6 @@ class Enrollment extends Model
 {
     use SoftDeletes;
 
-    /**
-     * Les attributs pouvant être remplis.
-     */
     protected $fillable = [
 
         'enrollment_number',
@@ -46,9 +43,6 @@ class Enrollment extends Model
 
     ];
 
-    /**
-     * Conversion automatique des types.
-     */
     protected $casts = [
 
         'registration_fee' => 'decimal:2',
@@ -73,33 +67,21 @@ class Enrollment extends Model
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Étudiant inscrit.
-     */
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
     }
 
-    /**
-     * Formation choisie.
-     */
     public function training(): BelongsTo
     {
         return $this->belongsTo(Training::class);
     }
 
-    /**
-     * Utilisateur ayant créé l'inscription.
-     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Paiements liés à cette inscription.
-     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
@@ -107,36 +89,27 @@ class Enrollment extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Méthodes métier
+    | Métier
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Vérifie si l'inscription est totalement soldée.
-     */
     public function isFullyPaid(): bool
     {
         return $this->balance <= 0;
     }
 
-    /**
-     * Vérifie si un paiement partiel a été effectué.
-     */
     public function isPartial(): bool
     {
         return $this->amount_paid > 0 && $this->balance > 0;
     }
 
-    /**
-     * Vérifie s'il reste un montant à payer.
-     */
     public function hasBalance(): bool
     {
         return $this->balance > 0;
     }
 
     /**
-     * Pourcentage de paiement.
+     * Progression du paiement (%)
      */
     public function getPaymentProgressAttribute(): float
     {
@@ -151,23 +124,21 @@ class Enrollment extends Model
     }
 
     /**
-     * Statut calculé selon le paiement.
+     * Libellé français (pour l'affichage uniquement)
      */
     public function getFormattedStatusAttribute(): string
     {
-        if ($this->isFullyPaid()) {
-            return 'Soldé';
-        }
-
-        if ($this->isPartial()) {
-            return 'Partiellement payé';
-        }
-
-        return 'En attente';
+        return match ($this->status) {
+            'pending'   => 'En attente',
+            'partial'   => 'Partiellement payé',
+            'paid'      => 'Soldé',
+            'cancelled' => 'Annulé',
+            default     => $this->status,
+        };
     }
 
     /**
-     * Recalcule automatiquement le solde.
+     * Recalcul du solde et du statut
      */
     public function refreshBalance(): void
     {
@@ -176,7 +147,19 @@ class Enrollment extends Model
             $this->total_amount - $this->amount_paid
         );
 
-        $this->status = $this->getFormattedStatusAttribute();
+        if ($this->balance == 0) {
+
+            $this->status = 'paid';
+
+        } elseif ($this->amount_paid > 0) {
+
+            $this->status = 'partial';
+
+        } else {
+
+            $this->status = 'pending';
+
+        }
 
         $this->save();
     }

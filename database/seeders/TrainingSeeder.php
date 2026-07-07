@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\Training;
 use Illuminate\Database\Seeder;
+use App\Models\Training;
 
 class TrainingSeeder extends Seeder
 {
     /**
-     * Seed des formations officielles NEW FASHION.
+     * Seed the application's database.
      */
     public function run(): void
     {
@@ -24,7 +24,7 @@ class TrainingSeeder extends Seeder
                 'price' => 250000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -35,7 +35,7 @@ class TrainingSeeder extends Seeder
                 'price' => 250000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -46,7 +46,7 @@ class TrainingSeeder extends Seeder
                 'price' => 100000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -57,7 +57,7 @@ class TrainingSeeder extends Seeder
                 'price' => 250000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -68,18 +68,18 @@ class TrainingSeeder extends Seeder
                 'price' => 300000,
                 'duration_months' => 6,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
                 'code' => 'PAT001',
                 'title' => 'Pâtisserie',
                 'category' => 'Pâtisserie',
-                'description' => 'Formation professionnelle en pâtisserie.',
+                'description' => 'Formation en pâtisserie professionnelle.',
                 'price' => 150000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -90,29 +90,29 @@ class TrainingSeeder extends Seeder
                 'price' => 150000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
                 'code' => 'STY001',
                 'title' => 'Stylisme & Modélisme',
                 'category' => 'Stylisme & Modélisme',
-                'description' => 'Formation professionnelle en stylisme et modélisme.',
+                'description' => 'Formation en stylisme et modélisme.',
                 'price' => 350000,
                 'duration_months' => 12,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
                 'code' => 'INFO001',
                 'title' => 'Informatique',
                 'category' => 'Informatique',
-                'description' => 'Formation professionnelle en informatique.',
+                'description' => 'Formation en informatique professionnelle.',
                 'price' => 100000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -123,7 +123,7 @@ class TrainingSeeder extends Seeder
                 'price' => 75000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -134,7 +134,7 @@ class TrainingSeeder extends Seeder
                 'price' => 100000,
                 'duration_months' => 3,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
             [
@@ -145,15 +145,13 @@ class TrainingSeeder extends Seeder
                 'price' => 500000,
                 'duration_months' => 6,
                 'certificate' => 'Certificat de Formation Professionnelle',
-                'status' => 'active',
+                'is_active' => true,
             ],
 
         ];
 
         foreach ($trainings as $training) {
-
             Training::create($training);
-
         }
     }
 }
