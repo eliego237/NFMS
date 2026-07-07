@@ -16,7 +16,7 @@ class DashboardService
      */
     public static function index(): array
     {
-        $today = today();
+        $today = now()->toDateString();
 
         $currentMonth = now()->month;
         $currentYear = now()->year;
