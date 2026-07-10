@@ -47,17 +47,17 @@ class Enrollment extends Model
 
         'registration_fee' => 'decimal:2',
 
-        'training_fee' => 'decimal:2',
+        'training_fee'     => 'decimal:2',
 
-        'discount' => 'decimal:2',
+        'discount'         => 'decimal:2',
 
-        'total_amount' => 'decimal:2',
+        'total_amount'     => 'decimal:2',
 
-        'amount_paid' => 'decimal:2',
+        'amount_paid'      => 'decimal:2',
 
-        'balance' => 'decimal:2',
+        'balance'          => 'decimal:2',
 
-        'enrolled_at' => 'date',
+        'enrolled_at'      => 'date',
 
     ];
 
@@ -93,20 +93,35 @@ class Enrollment extends Model
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * L'inscription est entièrement soldée.
+     */
     public function isFullyPaid(): bool
     {
         return $this->balance <= 0;
     }
 
+    /**
+     * Paiement partiel.
+     */
     public function isPartial(): bool
     {
         return $this->amount_paid > 0 && $this->balance > 0;
     }
 
+    /**
+     * Il reste un solde.
+     */
     public function hasBalance(): bool
     {
         return $this->balance > 0;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
 
     /**
      * Progression du paiement (%)
@@ -124,21 +139,102 @@ class Enrollment extends Model
     }
 
     /**
-     * Libellé français (pour l'affichage uniquement)
+     * Montant réellement économisé grâce à la remise.
+     */
+    public function getFormattedDiscountAttribute(): string
+    {
+        return number_format(
+            $this->discount,
+            0,
+            ',',
+            ' '
+        ) . ' FCFA';
+    }
+
+    /**
+     * Montant total formaté.
+     */
+    public function getFormattedRegistrationFeeAttribute(): string
+    {
+    return number_format(
+        $this->registration_fee,
+        0,
+        ',',
+        ' '
+    ) . ' FCFA';
+    }
+
+    public function getFormattedTrainingFeeAttribute(): string
+    {
+    return number_format(
+        $this->training_fee,
+        0,
+        ',',
+        ' '
+    ) . ' FCFA';
+    }
+    public function getFormattedTotalAmountAttribute(): string
+    {
+    return number_format(
+        $this->total_amount,
+        0,
+        ',',
+        ' '
+    ) . ' FCFA';
+    }
+    /**
+     * Montant déjà payé formaté.
+     */
+    public function getFormattedAmountPaidAttribute(): string
+    {
+        return number_format(
+            $this->amount_paid,
+            0,
+            ',',
+            ' '
+        ) . ' FCFA';
+    }
+
+    /**
+     * Solde formaté.
+     */
+    public function getFormattedBalanceAttribute(): string
+    {
+        return number_format(
+            $this->balance,
+            0,
+            ',',
+            ' '
+        ) . ' FCFA';
+    }
+
+    /**
+     * Libellé français du statut.
      */
     public function getFormattedStatusAttribute(): string
     {
         return match ($this->status) {
+
             'pending'   => 'En attente',
+
             'partial'   => 'Partiellement payé',
+
             'paid'      => 'Soldé',
+
             'cancelled' => 'Annulé',
+
             default     => $this->status,
         };
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Calculs
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * Recalcul du solde et du statut
+     * Recalcul du solde et du statut.
      */
     public function refreshBalance(): void
     {

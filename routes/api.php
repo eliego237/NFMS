@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PdfController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TrainingController;
@@ -30,9 +31,30 @@ Route::post('/login', [AuthController::class, 'login']);
 
 /*
 |--------------------------------------------------------------------------
+| Reçus PDF (routes publiques)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/payments/{payment}/receipt', [PdfController::class, 'receipt']);
+
+Route::get('/receipt/{receipt}', [PdfController::class, 'verifyReceipt'])
+    ->name('receipt.verify');
+
+/*
+|--------------------------------------------------------------------------
 | Routes protégées
 |--------------------------------------------------------------------------
 */
+
+Route::get(
+    '/payments/{payment}/receipt',
+    [PdfController::class, 'receipt']
+);
+
+Route::get(
+    '/receipt/{receipt}',
+    [PdfController::class, 'verifyReceipt']
+)->name('receipt.verify');
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -138,6 +160,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('reports')->group(function () {
 
+        Route::get('/test-pdf', function () {return 'PDF OK';});
+    
         Route::get('/payments', [ReportController::class, 'payments']);
 
         Route::get('/expenses', [ReportController::class, 'expenses']);
