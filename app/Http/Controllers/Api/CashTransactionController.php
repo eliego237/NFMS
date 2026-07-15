@@ -4,9 +4,32 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CashTransaction;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CashTransactionController extends Controller
+class CashTransactionController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:cash.view',
+                only: [
+                    'index',
+                    'show',
+                    'income',
+                    'expenses',
+                    'summary',
+                ]
+            ),
+
+        ];
+    }
+
     /**
      * Liste des opérations de caisse.
      */
@@ -56,7 +79,7 @@ class CashTransactionController extends Controller
                 'paymentMethod',
                 'recorder',
             ])
-            ->where('type', 'income')
+            ->where('type', 'Entrée')
             ->latest('transaction_date')
             ->get()
 
@@ -75,7 +98,7 @@ class CashTransactionController extends Controller
                 'paymentMethod',
                 'recorder',
             ])
-            ->where('type', 'expense')
+            ->where('type', 'Sortie')
             ->latest('transaction_date')
             ->get()
 
@@ -87,11 +110,15 @@ class CashTransactionController extends Controller
      */
     public function summary()
     {
-        $income = CashTransaction::where('type', 'income')
-            ->sum('amount');
+        $income = CashTransaction::where(
+            'type',
+            'Entrée'
+        )->sum('amount');
 
-        $expense = CashTransaction::where('type', 'expense')
-            ->sum('amount');
+        $expense = CashTransaction::where(
+            'type',
+            'Sortie'
+        )->sum('amount');
 
         return response()->json([
 

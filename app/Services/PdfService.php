@@ -15,15 +15,10 @@ class PdfService
     public static function receipt(Payment $payment)
     {
         $payment->load([
-
             'enrollment.student',
-
             'enrollment.training',
-
             'paymentMethod',
-
             'receiver',
-
         ]);
 
         /*
@@ -32,7 +27,9 @@ class PdfService
         |--------------------------------------------------------------------------
         */
 
-        $logo = null;
+        $logo = 'data:image/png;base64,' . base64_encode(
+    file_get_contents(public_path('images/logo-small.png'))
+);
 
         /*
         |--------------------------------------------------------------------------
@@ -52,15 +49,10 @@ class PdfService
         */
 
         $result = Builder::create()
-
             ->writer(new PngWriter())
-
             ->data($verificationUrl)
-
             ->size(220)
-
             ->margin(10)
-
             ->build();
 
         /*
@@ -70,18 +62,11 @@ class PdfService
         */
 
         if (!file_exists(public_path('temp'))) {
-
-            mkdir(
-                public_path('temp'),
-                0755,
-                true
-            );
+            mkdir(public_path('temp'), 0755, true);
         }
 
         $qrPath = public_path(
-            'temp/qrcode-' .
-            $payment->id .
-            '.png'
+            'temp/qrcode-' . $payment->id . '.png'
         );
 
         file_put_contents(
@@ -91,28 +76,33 @@ class PdfService
 
         /*
         |--------------------------------------------------------------------------
+        | QR Code en Base64
+        |--------------------------------------------------------------------------
+        */
+
+        $qrcode = 'data:image/png;base64,' . base64_encode(
+            file_get_contents($qrPath)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
         | Génération du PDF
         |--------------------------------------------------------------------------
         */
- 
-        $html = view('pdf.receipt', [
-    'payment' => $payment,
-    'logo' => $logo,
-    'qrcode' => $qrcode,
-])->render();
 
-dd($html);
+        $pdf = Pdf::loadView(
+            'pdf.receipt',
+            [
+                'payment' => $payment,
+                'logo'    => $logo,
+                'qrcode'  => $qrcode,
+            ]
+        );
 
-      $html = view('pdf.receipt', [
-    'payment' => $payment,
-    'logo' => $logo,
-    'qrcode' => $qrPath,
-])->render();
+        $pdf->setPaper('A5', 'landscape');
 
-$pdf = Pdf::loadHTML($html);
-
-$pdf->setPaper('A5', 'landscape');
-
-return $pdf->stream('test.pdf');
+        return $pdf->stream(
+            'REC-' . $payment->receipt_number . '.pdf'
+        );
     }
 }

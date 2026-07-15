@@ -7,9 +7,41 @@ use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
 use App\Models\Payment;
 use App\Services\PaymentService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class PaymentController extends Controller
+class PaymentController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:payments.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:payments.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:payments.update',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:payments.delete',
+                only: ['destroy']
+            ),
+
+        ];
+    }
+
     /**
      * Liste des paiements.
      */

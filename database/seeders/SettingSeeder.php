@@ -21,20 +21,38 @@ class SettingSeeder extends Seeder
             ],
 
             [
+                'key' => 'school_slogan',
+                'value' => 'Institut de Beauté & Centre de Formation Professionnelle',
+                'description' => 'Slogan',
+            ],
+
+            [
                 'key' => 'school_phone',
-                'value' => '',
+                'value' => '+237 676266865',
                 'description' => 'Téléphone principal',
             ],
 
             [
+                'key' => 'school_phone2',
+                'value' => '+237 655361946',
+                'description' => 'Téléphone secondaire',
+            ],
+
+            [
                 'key' => 'school_email',
-                'value' => '',
+                'value' => 'monkammarche@gmail.com',
                 'description' => 'Adresse email',
             ],
 
             [
+                'key' => 'school_website',
+                'value' => 'www.newfashioncm.com',
+                'description' => 'Site web',
+            ],
+
+            [
                 'key' => 'school_address',
-                'value' => 'Douala, Cameroun',
+                'value' => 'Douala - Ndogbong Face Socaver',
                 'description' => 'Adresse',
             ],
 
@@ -57,15 +75,15 @@ class SettingSeeder extends Seeder
             ],
 
             [
-                'key' => 'registration_fee',
-                'value' => '16500',
-                'description' => 'Frais d\'inscription',
-            ],
-
-            [
                 'key' => 'academic_year',
                 'value' => '2026-2027',
                 'description' => 'Année académique',
+            ],
+
+            [
+                'key' => 'registration_fee',
+                'value' => '16500',
+                'description' => 'Frais d\'inscription',
             ],
 
             [
@@ -87,9 +105,33 @@ class SettingSeeder extends Seeder
             ],
 
             [
+                'key' => 'student_prefix',
+                'value' => 'STU',
+                'description' => 'Préfixe des étudiants',
+            ],
+
+            [
                 'key' => 'cash_prefix',
                 'value' => 'CASH',
                 'description' => 'Préfixe des opérations de caisse',
+            ],
+
+            [
+                'key' => 'director_name',
+                'value' => '',
+                'description' => 'Nom du directeur',
+            ],
+
+            [
+                'key' => 'cashier_name',
+                'value' => '',
+                'description' => 'Nom du caissier',
+            ],
+
+            [
+                'key' => 'logo',
+                'value' => 'images/logo.png',
+                'description' => 'Logo de l\'établissement',
             ],
 
         ];

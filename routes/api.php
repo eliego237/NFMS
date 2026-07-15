@@ -9,17 +9,22 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\PdfController;
+use App\Http\Controllers\Api\CashTransactionController;
+use App\Http\Controllers\Api\DashboardChartController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\StudentController;
-use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\EnrollmentController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentMethodController;
-use App\Http\Controllers\Api\ExpenseController;
-use App\Http\Controllers\Api\CashTransactionController;
+use App\Http\Controllers\Api\PdfController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\TrainingController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UtilityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,23 +33,6 @@ use App\Http\Controllers\Api\ReportController;
 */
 
 Route::post('/login', [AuthController::class, 'login']);
-
-/*
-|--------------------------------------------------------------------------
-| Reçus PDF (routes publiques)
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/payments/{payment}/receipt', [PdfController::class, 'receipt']);
-
-Route::get('/receipt/{receipt}', [PdfController::class, 'verifyReceipt'])
-    ->name('receipt.verify');
-
-/*
-|--------------------------------------------------------------------------
-| Routes protégées
-|--------------------------------------------------------------------------
-*/
 
 Route::get(
     '/payments/{payment}/receipt',
@@ -55,6 +43,12 @@ Route::get(
     '/receipt/{receipt}',
     [PdfController::class, 'verifyReceipt']
 )->name('receipt.verify');
+
+/*
+|--------------------------------------------------------------------------
+| Routes protégées
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -72,6 +66,48 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Paramètres
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/settings', [SettingController::class, 'index']);
+    Route::put('/settings', [SettingController::class, 'update']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Utilisateurs
+    |--------------------------------------------------------------------------
+    */
+
+    Route::apiResource('users', UserController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Utilitaires
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/roles', [UtilityController::class, 'roles']);
+    Route::get('/permissions', [UtilityController::class, 'permissions']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Journal d'activité
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/activity-logs',
+        [ActivityLogController::class, 'index']
+    );
+
+    Route::get(
+        '/activity-logs/{activity}',
+        [ActivityLogController::class, 'show']
+    );
+
+    /*
+    |--------------------------------------------------------------------------
     | Dashboard
     |--------------------------------------------------------------------------
     */
@@ -84,55 +120,45 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Étudiants
+    | Dashboard Charts
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('dashboard/charts')->group(function () {
+
+        Route::get('/payments', [DashboardChartController::class, 'payments']);
+
+        Route::get('/expenses', [DashboardChartController::class, 'expenses']);
+
+        Route::get('/enrollments', [DashboardChartController::class, 'enrollments']);
+
+        Route::get('/payment-methods', [DashboardChartController::class, 'paymentMethods']);
+
+        Route::get('/trainings', [DashboardChartController::class, 'trainings']);
+
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ressources principales
     |--------------------------------------------------------------------------
     */
 
     Route::apiResource('students', StudentController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Formations
-    |--------------------------------------------------------------------------
-    */
-
     Route::apiResource('trainings', TrainingController::class);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Inscriptions
-    |--------------------------------------------------------------------------
-    */
 
     Route::apiResource('enrollments', EnrollmentController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Paiements
-    |--------------------------------------------------------------------------
-    */
-
     Route::apiResource('payments', PaymentController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Moyens de paiement
-    |--------------------------------------------------------------------------
-    */
-
     Route::apiResource('payment-methods', PaymentMethodController::class);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Dépenses
-    |--------------------------------------------------------------------------
-    */
 
     Route::apiResource('expenses', ExpenseController::class);
 
     /*
     |--------------------------------------------------------------------------
-    | Journal de caisse
+    | Caisse
     |--------------------------------------------------------------------------
     */
 
@@ -160,8 +186,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('reports')->group(function () {
 
-        Route::get('/test-pdf', function () {return 'PDF OK';});
-    
+        Route::get('/test-pdf', function () {
+            return 'PDF OK';
+        });
+
         Route::get('/payments', [ReportController::class, 'payments']);
 
         Route::get('/expenses', [ReportController::class, 'expenses']);

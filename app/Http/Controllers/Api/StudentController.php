@@ -6,9 +6,41 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Student;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class StudentController extends Controller
+class StudentController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:students.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:students.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:students.update',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:students.delete',
+                only: ['destroy']
+            ),
+
+        ];
+    }
+
     /**
      * Liste des étudiants.
      */

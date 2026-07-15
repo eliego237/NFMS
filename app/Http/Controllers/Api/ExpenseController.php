@@ -7,9 +7,41 @@ use App\Http\Requests\StoreExpenseRequest;
 use App\Http\Requests\UpdateExpenseRequest;
 use App\Models\Expense;
 use App\Services\ExpenseService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ExpenseController extends Controller
+class ExpenseController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:expenses.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:expenses.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:expenses.update',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:expenses.delete',
+                only: ['destroy']
+            ),
+
+        ];
+    }
+
     /**
      * Liste des dépenses.
      */

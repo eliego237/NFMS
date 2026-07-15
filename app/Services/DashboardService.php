@@ -19,7 +19,7 @@ class DashboardService
         $today = now()->toDateString();
 
         $currentMonth = now()->month;
-        $currentYear = now()->year;
+        $currentYear  = now()->year;
 
         /*
         |--------------------------------------------------------------------------
@@ -27,11 +27,11 @@ class DashboardService
         |--------------------------------------------------------------------------
         */
 
-        $students = Student::count();
+        $students     = Student::count();
 
-        $trainings = Training::count();
+        $trainings    = Training::count();
 
-        $enrollments = Enrollment::count();
+        $enrollments  = Enrollment::count();
 
         /*
         |--------------------------------------------------------------------------
@@ -76,15 +76,11 @@ class DashboardService
         |--------------------------------------------------------------------------
         */
 
-        $cashIn = CashTransaction::where(
-            'type',
-            'Entrée'
-        )->sum('amount');
+        $cashIn = CashTransaction::income()
+            ->sum('amount');
 
-        $cashOut = CashTransaction::where(
-            'type',
-            'Sortie'
-        )->sum('amount');
+        $cashOut = CashTransaction::expense()
+            ->sum('amount');
 
         $cashBalance = $cashIn - $cashOut;
 
@@ -130,7 +126,7 @@ class DashboardService
 
         /*
         |--------------------------------------------------------------------------
-        | Activité récente
+        | Activités récentes
         |--------------------------------------------------------------------------
         */
 
@@ -145,12 +141,23 @@ class DashboardService
         $latestPayments = Payment::with([
             'enrollment.student',
             'paymentMethod',
+            'receiver',
         ])
         ->latest()
         ->take(5)
         ->get();
 
         $latestExpenses = Expense::with([
+            'paymentMethod',
+            'recorder',
+        ])
+        ->latest()
+        ->take(5)
+        ->get();
+
+        $latestTransactions = CashTransaction::with([
+            'payment',
+            'expense',
             'paymentMethod',
             'recorder',
         ])
@@ -198,6 +205,10 @@ class DashboardService
 
                 'expenses_month' => $expensesMonth,
 
+                'cash_in' => $cashIn,
+
+                'cash_out' => $cashOut,
+
                 'cash_balance' => $cashBalance,
 
                 'payment_rate' => $paymentRate,
@@ -211,6 +222,8 @@ class DashboardService
                 'payments' => $latestPayments,
 
                 'expenses' => $latestExpenses,
+
+                'transactions' => $latestTransactions,
 
             ],
 

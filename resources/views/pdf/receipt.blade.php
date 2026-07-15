@@ -78,9 +78,9 @@ CACHET PAYE
 
     position:absolute;
 
-    top:130px;
+    top:200px;
 
-    left:700px;
+    left:760px;
 
     font-size:90px;
 
@@ -88,7 +88,9 @@ CACHET PAYE
 
     font-weight:bold;
 
-    opacity:.10;
+    opacity:.15;
+
+    transform:rotate(-25deg);
 
 }
 
@@ -373,7 +375,12 @@ NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
 NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
 NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
 NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
 </div>
 
 <!-- ==================================================
@@ -398,7 +405,7 @@ HEADER
 
 <td class="logo">
 
-<img src="{{ $logo }}">
+<img src="{{ $logo }}" width="80">
 
 </td>
 
@@ -893,8 +900,7 @@ SIGNATURES
 
 <div class="small">
 
-Scanner ce QR Code pour vérifier
-l'authenticité de ce reçu.
+Scan Me.
 
 </div>
 

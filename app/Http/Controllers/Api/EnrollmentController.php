@@ -10,9 +10,41 @@ use App\Models\Setting;
 use App\Models\Training;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class EnrollmentController extends Controller
+class EnrollmentController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:enrollments.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:enrollments.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:enrollments.update',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:enrollments.delete',
+                only: ['destroy']
+            ),
+
+        ];
+    }
+
     /**
      * Liste des inscriptions.
      */

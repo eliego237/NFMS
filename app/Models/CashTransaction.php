@@ -11,6 +11,13 @@ class CashTransaction extends Model
     use SoftDeletes;
 
     /**
+     * Types de transaction.
+     */
+    public const TYPE_INCOME = 'income';
+
+    public const TYPE_EXPENSE = 'expense';
+
+    /**
      * Les attributs pouvant être remplis.
      */
     protected $fillable = [
@@ -50,6 +57,12 @@ class CashTransaction extends Model
 
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
+
     /**
      * Paiement à l'origine de la transaction.
      */
@@ -82,12 +95,40 @@ class CashTransaction extends Model
         return $this->belongsTo(User::class, 'recorded_by');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Transactions d'entrée.
+     */
+    public function scopeIncome($query)
+    {
+        return $query->where('type', self::TYPE_INCOME);
+    }
+
+    /**
+     * Transactions de sortie.
+     */
+    public function scopeExpense($query)
+    {
+        return $query->where('type', self::TYPE_EXPENSE);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Métier
+    |--------------------------------------------------------------------------
+    */
+
     /**
      * Vérifie si la transaction est une entrée.
      */
     public function isIncome(): bool
     {
-        return $this->type === 'income';
+        return $this->type === self::TYPE_INCOME;
     }
 
     /**
@@ -95,6 +136,41 @@ class CashTransaction extends Model
      */
     public function isExpense(): bool
     {
-        return $this->type === 'expense';
+        return $this->type === self::TYPE_EXPENSE;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Type formaté.
+     */
+    public function getFormattedTypeAttribute(): string
+    {
+        return match ($this->type) {
+
+            self::TYPE_INCOME => 'Entrée',
+
+            self::TYPE_EXPENSE => 'Sortie',
+
+            default => $this->type,
+
+        };
+    }
+
+    /**
+     * Montant formaté.
+     */
+    public function getFormattedAmountAttribute(): string
+    {
+        return number_format(
+            $this->amount,
+            0,
+            ',',
+            ' '
+        ) . ' FCFA';
     }
 }

@@ -6,9 +6,41 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrainingRequest;
 use App\Http\Requests\UpdateTrainingRequest;
 use App\Models\Training;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class TrainingController extends Controller
+class TrainingController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:trainings.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:trainings.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:trainings.update',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:trainings.delete',
+                only: ['destroy']
+            ),
+
+        ];
+    }
+
     /**
      * Liste des formations.
      */
