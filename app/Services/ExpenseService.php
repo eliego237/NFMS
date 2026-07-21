@@ -16,19 +16,36 @@ class ExpenseService
     {
         return DB::transaction(function () use ($data) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Génération du numéro de dépense
+            |--------------------------------------------------------------------------
+            */
+
             $prefix = Setting::getValue(
                 'expense_prefix',
                 'EXP'
             );
 
-            $nextNumber = (Expense::max('id') ?? 0) + 1;
+            $nextNumber = Expense::withTrashed()->max('id') + 1;
 
             $expenseNumber = sprintf(
+
                 '%s%s%06d',
+
                 $prefix,
+
                 now()->year,
+
                 $nextNumber
+
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Création de la dépense
+            |--------------------------------------------------------------------------
+            */
 
             $expense = Expense::create([
 
@@ -54,9 +71,62 @@ class ExpenseService
 
             ]);
 
-            CashTransactionService::recordExpense($expense);
+            /*
+            |--------------------------------------------------------------------------
+            | Journal de caisse
+            |--------------------------------------------------------------------------
+            */
 
-            return $expense->fresh();
+            CashTransactionService::recordExpense(
+                $expense
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Journal d'activité
+            |--------------------------------------------------------------------------
+            */
+
+            ActivityLogService::log(
+
+                module: 'expenses',
+
+                event: 'created',
+
+                subject: $expense,
+
+                properties: [
+
+                    'numero' => $expense->expense_number,
+
+                    'categorie' => $expense->category,
+
+                    'libelle' => $expense->title,
+
+                    'montant' => $expense->amount,
+
+                    'utilisateur' => Auth::user()?->name,
+
+                ]
+
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retour
+            |--------------------------------------------------------------------------
+            */
+
+            return $expense->fresh()->load([
+
+                'paymentMethod',
+
+                'recorder',
+
+                'cashTransaction',
+
+            ]);
+
         });
     }
 
@@ -68,7 +138,16 @@ class ExpenseService
         array $data
     ): Expense {
 
-        return DB::transaction(function () use ($expense, $data) {
+        return DB::transaction(function () use (
+            $expense,
+            $data
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Mise à jour
+            |--------------------------------------------------------------------------
+            */
 
             $expense->update([
 
@@ -90,6 +169,12 @@ class ExpenseService
 
             ]);
 
+            /*
+            |--------------------------------------------------------------------------
+            | Synchronisation de la caisse
+            |--------------------------------------------------------------------------
+            */
+
             if ($expense->cashTransaction) {
 
                 $expense->cashTransaction->update([
@@ -110,7 +195,52 @@ class ExpenseService
 
             }
 
-            return $expense->fresh();
+            /*
+            |--------------------------------------------------------------------------
+            | Journal d'activité
+            |--------------------------------------------------------------------------
+            */
+
+            ActivityLogService::log(
+
+                module: 'expenses',
+
+                event: 'updated',
+
+                subject: $expense,
+
+                properties: [
+
+                    'numero' => $expense->expense_number,
+
+                    'categorie' => $expense->category,
+
+                    'libelle' => $expense->title,
+
+                    'montant' => $expense->amount,
+
+                    'utilisateur' => Auth::user()?->name,
+
+                ]
+
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retour
+            |--------------------------------------------------------------------------
+            */
+
+            return $expense->fresh()->load([
+
+                'paymentMethod',
+
+                'recorder',
+
+                'cashTransaction',
+
+            ]);
+
         });
     }
 
@@ -123,11 +253,53 @@ class ExpenseService
 
         DB::transaction(function () use ($expense) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Journal d'activité
+            |--------------------------------------------------------------------------
+            */
+
+            ActivityLogService::log(
+
+                module: 'expenses',
+
+                event: 'deleted',
+
+                subject: $expense,
+
+                properties: [
+
+                    'numero' => $expense->expense_number,
+
+                    'categorie' => $expense->category,
+
+                    'libelle' => $expense->title,
+
+                    'montant' => $expense->amount,
+
+                    'utilisateur' => Auth::user()?->name,
+
+                ]
+
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Suppression de la transaction de caisse
+            |--------------------------------------------------------------------------
+            */
+
             if ($expense->cashTransaction) {
 
                 $expense->cashTransaction->delete();
 
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Suppression de la dépense
+            |--------------------------------------------------------------------------
+            */
 
             $expense->delete();
 

@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,6 +22,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\TrainingController;
+use App\Http\Controllers\Api\TrainingModuleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UtilityController;
 
@@ -31,6 +31,8 @@ use App\Http\Controllers\Api\UtilityController;
 | Routes publiques
 |--------------------------------------------------------------------------
 */
+
+Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -60,9 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/me', function (Request $request) {
-        return response()->json($request->user());
-    });
+    Route::get('/me', [AuthController::class, 'me']);
 
     /*
     |--------------------------------------------------------------------------
@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::get('/settings', [SettingController::class, 'index']);
+
     Route::put('/settings', [SettingController::class, 'update']);
 
     /*
@@ -88,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::get('/roles', [UtilityController::class, 'roles']);
+
     Route::get('/permissions', [UtilityController::class, 'permissions']);
 
     /*
@@ -96,15 +98,9 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get(
-        '/activity-logs',
-        [ActivityLogController::class, 'index']
-    );
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
-    Route::get(
-        '/activity-logs/{activity}',
-        [ActivityLogController::class, 'show']
-    );
+    Route::get('/activity-logs/{activity}', [ActivityLogController::class, 'show']);
 
     /*
     |--------------------------------------------------------------------------
@@ -148,6 +144,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('trainings', TrainingController::class);
 
+    Route::apiResource('training-modules', TrainingModuleController::class);
+
     Route::apiResource('enrollments', EnrollmentController::class);
 
     Route::apiResource('payments', PaymentController::class);
@@ -160,23 +158,29 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     | Caisse
     |--------------------------------------------------------------------------
+    |
+    | IMPORTANT :
+    | Les routes spécifiques doivent être déclarées AVANT apiResource,
+    | sinon Laravel interprète "summary", "income" et "expenses"
+    | comme {cash_transaction}.
+    |
     */
+
+    Route::prefix('cash-transactions')->group(function () {
+
+        Route::get('/summary', [CashTransactionController::class, 'summary']);
+
+        Route::get('/income', [CashTransactionController::class, 'income']);
+
+        Route::get('/expenses', [CashTransactionController::class, 'expenses']);
+
+    });
 
     Route::apiResource('cash-transactions', CashTransactionController::class)
         ->only([
             'index',
             'show',
         ]);
-
-    Route::prefix('cash-transactions')->group(function () {
-
-        Route::get('/income', [CashTransactionController::class, 'income']);
-
-        Route::get('/expenses', [CashTransactionController::class, 'expenses']);
-
-        Route::get('/summary', [CashTransactionController::class, 'summary']);
-
-    });
 
     /*
     |--------------------------------------------------------------------------

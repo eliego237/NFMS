@@ -36,13 +36,19 @@ class TrainingModule extends Model
      */
     protected $casts = [
 
-        'duration_hours' => 'integer',
+    'duration_hours' => 'integer',
 
-        'position' => 'integer',
+    'position' => 'integer',
 
-        'is_active' => 'boolean',
+    'is_active' => 'boolean',
 
-    ];
+    'created_at' => 'datetime',
+
+    'updated_at' => 'datetime',
+
+    'deleted_at' => 'datetime',
+
+];
 
     /**
      * Formation à laquelle appartient le module.

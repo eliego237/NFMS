@@ -16,11 +16,36 @@ class UpdateUserRequest extends FormRequest
     }
 
     /**
+     * Préparer les données avant validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => trim(
+                ($this->first_name ?? '') . ' ' . ($this->last_name ?? '')
+            ),
+            'role' => $this->roles[0] ?? null,
+        ]);
+    }
+
+    /**
      * Règles de validation.
      */
     public function rules(): array
     {
         return [
+
+            'first_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'last_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
 
             'name' => [
                 'required',
@@ -34,24 +59,6 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')
                     ->ignore($this->route('user')->id),
-            ],
-
-            'password' => [
-                'nullable',
-                'confirmed',
-                'min:8',
-            ],
-
-            'first_name' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'last_name' => [
-                'nullable',
-                'string',
-                'max:100',
             ],
 
             'phone' => [
@@ -69,6 +76,12 @@ class UpdateUserRequest extends FormRequest
             'status' => [
                 'nullable',
                 'boolean',
+            ],
+
+            'password' => [
+                'nullable',
+                'confirmed',
+                'min:8',
             ],
 
             'role' => [

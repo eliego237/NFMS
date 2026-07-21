@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePaymentMethodRequest;
 use App\Http\Requests\UpdatePaymentMethodRequest;
 use App\Models\PaymentMethod;
+use App\Services\ActivityLogService;
 
 class PaymentMethodController extends Controller
 {
@@ -14,65 +15,113 @@ class PaymentMethodController extends Controller
      */
     public function index()
     {
-        return response()->json(
+        return response()->json([
 
-            PaymentMethod::withCount([
+            'success' => true,
+
+            'message' => 'Liste des moyens de paiement récupérée avec succès.',
+
+            'data' => PaymentMethod::withCount([
                 'payments',
                 'expenses',
             ])
             ->orderBy('name')
-            ->get()
+            ->get(),
 
-        );
+        ]);
     }
 
     /**
      * Créer un moyen de paiement.
      */
-    public function store(StorePaymentMethodRequest $request)
-    {
-        $paymentMethod = PaymentMethod::create(
+    /**
+ * Créer un moyen de paiement.
+ */
+public function store(StorePaymentMethodRequest $request)
+{
+    // Génération automatique du code
+    $nextNumber = (PaymentMethod::max('id') ?? 0) + 1;
 
-            $request->validated()
+    $code = sprintf(
+        'PM%03d',
+        $nextNumber
+    );
 
-        );
+    $paymentMethod = PaymentMethod::create([
 
-        return response()->json([
+        'name' => $request->name,
 
-            'message' => 'Moyen de paiement créé avec succès.',
+        'code' => $code,
 
-            'data' => $paymentMethod,
+        'is_active' => $request->boolean('is_active', true),
 
-        ], 201);
-    }
+    ]);
+
+    ActivityLogService::log(
+        'payment_methods',
+        'created',
+        $paymentMethod,
+        [
+            'code' => $paymentMethod->code,
+            'name' => $paymentMethod->name,
+        ]
+    );
+
+    return response()->json([
+
+        'success' => true,
+
+        'message' => 'Moyen de paiement créé avec succès.',
+
+        'data' => $paymentMethod,
+
+    ], 201);
+}
 
     /**
      * Afficher un moyen de paiement.
      */
     public function show(PaymentMethod $paymentMethod)
     {
-        return response()->json(
+        return response()->json([
 
-            $paymentMethod->load([
+            'success' => true,
+
+            'message' => 'Moyen de paiement récupéré avec succès.',
+
+            'data' => $paymentMethod->load([
                 'payments',
                 'expenses',
-            ])
+            ]),
 
-        );
+        ]);
     }
 
     /**
      * Modifier un moyen de paiement.
      */
-    public function update(UpdatePaymentMethodRequest $request, PaymentMethod $paymentMethod)
-    {
+    public function update(
+        UpdatePaymentMethodRequest $request,
+        PaymentMethod $paymentMethod
+    ) {
         $paymentMethod->update(
 
             $request->validated()
 
         );
 
+        ActivityLogService::log(
+            'payment_methods',
+            'updated',
+            $paymentMethod,
+            [
+                'name' => $paymentMethod->name,
+            ]
+        );
+
         return response()->json([
+
+            'success' => true,
 
             'message' => 'Moyen de paiement modifié avec succès.',
 
@@ -106,9 +155,20 @@ class PaymentMethodController extends Controller
 
         }
 
+        ActivityLogService::log(
+            'payment_methods',
+            'deleted',
+            $paymentMethod,
+            [
+                'name' => $paymentMethod->name,
+            ]
+        );
+
         $paymentMethod->delete();
 
         return response()->json([
+
+            'success' => true,
 
             'message' => 'Moyen de paiement supprimé avec succès.'
 

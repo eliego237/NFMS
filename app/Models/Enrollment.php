@@ -2,16 +2,35 @@
 
 namespace App\Models;
 
-use LogsActivity;
-use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Enrollment extends Model
 {
     use SoftDeletes;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Statuts
+    |--------------------------------------------------------------------------
+    */
+
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_PARTIAL = 'partial';
+
+    public const STATUS_PAID = 'paid';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attributs
+    |--------------------------------------------------------------------------
+    */
 
     protected $fillable = [
 
@@ -45,21 +64,33 @@ class Enrollment extends Model
 
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Casts
+    |--------------------------------------------------------------------------
+    */
+
     protected $casts = [
 
         'registration_fee' => 'decimal:2',
 
-        'training_fee'     => 'decimal:2',
+        'training_fee' => 'decimal:2',
 
-        'discount'         => 'decimal:2',
+        'discount' => 'decimal:2',
 
-        'total_amount'     => 'decimal:2',
+        'total_amount' => 'decimal:2',
 
-        'amount_paid'      => 'decimal:2',
+        'amount_paid' => 'decimal:2',
 
-        'balance'          => 'decimal:2',
+        'balance' => 'decimal:2',
 
-        'enrolled_at'      => 'date',
+        'enrolled_at' => 'date',
+
+        'created_at' => 'datetime',
+
+        'updated_at' => 'datetime',
+
+        'deleted_at' => 'datetime',
 
     ];
 
@@ -69,21 +100,36 @@ class Enrollment extends Model
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * Étudiant inscrit.
+     */
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
     }
 
+    /**
+     * Formation choisie.
+     */
     public function training(): BelongsTo
     {
         return $this->belongsTo(Training::class);
     }
 
+    /**
+     * Utilisateur ayant créé l'inscription.
+     */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(
+            User::class,
+            'created_by'
+        );
     }
 
+    /**
+     * Paiements liés à l'inscription.
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
@@ -96,27 +142,54 @@ class Enrollment extends Model
     */
 
     /**
-     * L'inscription est entièrement soldée.
+     * Vérifie si l'inscription est entièrement payée.
      */
     public function isFullyPaid(): bool
     {
-        return $this->balance <= 0;
+        return $this->status === static::STATUS_PAID;
     }
 
     /**
-     * Paiement partiel.
+     * Vérifie si l'inscription est partiellement payée.
      */
     public function isPartial(): bool
     {
-        return $this->amount_paid > 0 && $this->balance > 0;
+        return $this->status === static::STATUS_PARTIAL;
     }
 
     /**
-     * Il reste un solde.
+     * Vérifie s'il reste un solde.
      */
     public function hasBalance(): bool
     {
         return $this->balance > 0;
+    }
+
+    /**
+     * Recalcule automatiquement le solde et le statut.
+     */
+    public function refreshBalance(): void
+    {
+        $this->balance = max(
+            0,
+            $this->total_amount - $this->amount_paid
+        );
+
+        if ($this->balance == 0) {
+
+            $this->status = static::STATUS_PAID;
+
+        } elseif ($this->amount_paid > 0) {
+
+            $this->status = static::STATUS_PARTIAL;
+
+        } else {
+
+            $this->status = static::STATUS_PENDING;
+
+        }
+
+        $this->save();
     }
 
     /*
@@ -126,7 +199,7 @@ class Enrollment extends Model
     */
 
     /**
-     * Progression du paiement (%)
+     * Pourcentage de paiement.
      */
     public function getPaymentProgressAttribute(): float
     {
@@ -141,60 +214,43 @@ class Enrollment extends Model
     }
 
     /**
-     * Montant réellement économisé grâce à la remise.
+     * Frais d'inscription formatés.
+     */
+    public function getFormattedRegistrationFeeAttribute(): string
+    {
+        return number_format($this->registration_fee, 0, ',', ' ') . ' FCFA';
+    }
+
+    /**
+     * Frais de formation formatés.
+     */
+    public function getFormattedTrainingFeeAttribute(): string
+    {
+        return number_format($this->training_fee, 0, ',', ' ') . ' FCFA';
+    }
+
+    /**
+     * Remise formatée.
      */
     public function getFormattedDiscountAttribute(): string
     {
-        return number_format(
-            $this->discount,
-            0,
-            ',',
-            ' '
-        ) . ' FCFA';
+        return number_format($this->discount, 0, ',', ' ') . ' FCFA';
     }
 
     /**
      * Montant total formaté.
      */
-    public function getFormattedRegistrationFeeAttribute(): string
-    {
-    return number_format(
-        $this->registration_fee,
-        0,
-        ',',
-        ' '
-    ) . ' FCFA';
-    }
-
-    public function getFormattedTrainingFeeAttribute(): string
-    {
-    return number_format(
-        $this->training_fee,
-        0,
-        ',',
-        ' '
-    ) . ' FCFA';
-    }
     public function getFormattedTotalAmountAttribute(): string
     {
-    return number_format(
-        $this->total_amount,
-        0,
-        ',',
-        ' '
-    ) . ' FCFA';
+        return number_format($this->total_amount, 0, ',', ' ') . ' FCFA';
     }
+
     /**
-     * Montant déjà payé formaté.
+     * Montant payé formaté.
      */
     public function getFormattedAmountPaidAttribute(): string
     {
-        return number_format(
-            $this->amount_paid,
-            0,
-            ',',
-            ' '
-        ) . ' FCFA';
+        return number_format($this->amount_paid, 0, ',', ' ') . ' FCFA';
     }
 
     /**
@@ -202,63 +258,64 @@ class Enrollment extends Model
      */
     public function getFormattedBalanceAttribute(): string
     {
-        return number_format(
-            $this->balance,
-            0,
-            ',',
-            ' '
-        ) . ' FCFA';
+        return number_format($this->balance, 0, ',', ' ') . ' FCFA';
     }
 
     /**
-     * Libellé français du statut.
+     * Libellé du statut.
      */
     public function getFormattedStatusAttribute(): string
     {
         return match ($this->status) {
 
-            'pending'   => 'En attente',
+            static::STATUS_PENDING => 'En attente',
 
-            'partial'   => 'Partiellement payé',
+            static::STATUS_PARTIAL => 'Partiellement payé',
 
-            'paid'      => 'Soldé',
+            static::STATUS_PAID => 'Soldé',
 
-            'cancelled' => 'Annulé',
+            static::STATUS_CANCELLED => 'Annulé',
 
-            default     => $this->status,
+            default => $this->status,
         };
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Calculs
+    | Scopes
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Recalcul du solde et du statut.
-     */
-    public function refreshBalance(): void
+    public function scopePending(Builder $query): Builder
     {
-        $this->balance = max(
-            0,
-            $this->total_amount - $this->amount_paid
+        return $query->where(
+            'status',
+            static::STATUS_PENDING
         );
+    }
 
-        if ($this->balance == 0) {
+    public function scopePartial(Builder $query): Builder
+    {
+        return $query->where(
+            'status',
+            static::STATUS_PARTIAL
+        );
+    }
 
-            $this->status = 'paid';
+    public function scopePaid(Builder $query): Builder
+    {
+        return $query->where(
+            'status',
+            static::STATUS_PAID
+        );
+    }
 
-        } elseif ($this->amount_paid > 0) {
-
-            $this->status = 'partial';
-
-        } else {
-
-            $this->status = 'pending';
-
-        }
-
-        $this->save();
+    public function scopeWithBalance(Builder $query): Builder
+    {
+        return $query->where(
+            'balance',
+            '>',
+            0
+        );
     }
 }

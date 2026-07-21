@@ -43,6 +43,18 @@ class PermissionSeeder extends Seeder
             'trainings.create',
             'trainings.update',
             'trainings.delete',
+            'training-modules.view',
+            'training-modules.create',
+            'training-modules.update',
+            'training-modules.delete', 
+
+            /*
+|--------------------------------------------------------------------------
+| Activity Logs
+|--------------------------------------------------------------------------
+*/
+
+'activity_logs.view',
 
             /*
             |--------------------------------------------------------------------------

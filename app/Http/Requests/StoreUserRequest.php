@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreUserRequest extends FormRequest
 {
@@ -21,10 +23,16 @@ class StoreUserRequest extends FormRequest
     {
         return [
 
-            'name' => [
+            'first_name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:100',
+            ],
+
+            'last_name' => [
+                'required',
+                'string',
+                'max:100',
             ],
 
             'email' => [
@@ -32,24 +40,6 @@ class StoreUserRequest extends FormRequest
                 'email',
                 'max:255',
                 'unique:users,email',
-            ],
-
-            'password' => [
-                'required',
-                'confirmed',
-                'min:8',
-            ],
-
-            'first_name' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'last_name' => [
-                'nullable',
-                'string',
-                'max:100',
             ],
 
             'phone' => [
@@ -69,8 +59,19 @@ class StoreUserRequest extends FormRequest
                 'boolean',
             ],
 
-            'role' => [
+            'password' => [
                 'required',
+                'confirmed',
+                'min:8',
+            ],
+
+            'roles' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'roles.*' => [
                 'exists:roles,name',
             ],
 
@@ -84,12 +85,36 @@ class StoreUserRequest extends FormRequest
     {
         return [
 
+            'first_name.required' => 'Le prénom est obligatoire.',
+
+            'last_name.required' => 'Le nom est obligatoire.',
+
+            'email.required' => 'L\'adresse email est obligatoire.',
+
             'email.unique' => 'Cette adresse email est déjà utilisée.',
+
+            'password.required' => 'Le mot de passe est obligatoire.',
 
             'password.confirmed' => 'La confirmation du mot de passe est incorrecte.',
 
-            'role.exists' => 'Le rôle sélectionné est invalide.',
+            'roles.required' => 'Veuillez sélectionner au moins un rôle.',
+
+            'roles.*.exists' => 'Le rôle sélectionné est invalide.',
 
         ];
+    }
+
+    /**
+     * Format uniforme des erreurs.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Les données envoyées sont invalides.',
+                'errors' => $validator->errors(),
+            ], 422)
+        );
     }
 }

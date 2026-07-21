@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use LogsActivity;
-use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 
 class Student extends Model
 {
@@ -50,6 +50,12 @@ class Student extends Model
 
         'status' => 'boolean',
 
+        'created_at' => 'datetime',
+
+        'updated_at' => 'datetime',
+
+        'deleted_at' => 'datetime',
+
     ];
 
     /**
@@ -57,7 +63,19 @@ class Student extends Model
      */
     public function enrollments(): HasMany
     {
-        return $this->hasMany(Enrollment::class);
+        return $this->hasMany(
+            Enrollment::class
+        );
+    }
+
+    /**
+     * Dernière inscription.
+     */
+    public function latestEnrollment(): HasOne
+    {
+        return $this->hasOne(
+            Enrollment::class
+        )->latestOfMany();
     }
 
     /**
@@ -65,15 +83,11 @@ class Student extends Model
      */
     public function getFullNameAttribute(): string
     {
-        return "{$this->first_name} {$this->last_name}";
-    }
+        return trim(
 
-    /**
-     * Dernière inscription.
-     */
-    public function latestEnrollment()
-    {
-        return $this->hasOne(Enrollment::class)->latestOfMany();
+            $this->first_name . ' ' . $this->last_name
+
+        );
     }
 
     /**
@@ -82,7 +96,21 @@ class Student extends Model
     public function hasActiveEnrollment(): bool
     {
         return $this->enrollments()
-            ->whereIn('status', ['pending', 'partial'])
+            ->whereIn(
+                'status',
+                [
+                    'pending',
+                    'partial',
+                ]
+            )
             ->exists();
     }
+
+    /**
+     * Scope des étudiants actifs.
+     */
+    public function scopeActive(Builder $query): Builder
+{
+    return $query->where('status', true);
+}
 }

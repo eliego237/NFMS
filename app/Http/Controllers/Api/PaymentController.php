@@ -54,10 +54,12 @@ class PaymentController extends Controller implements HasMiddleware
             'message' => 'Liste des paiements récupérée avec succès.',
 
             'data' => Payment::with([
+
                 'enrollment.student',
                 'enrollment.training',
                 'paymentMethod',
                 'receiver',
+
             ])
             ->latest()
             ->get(),
@@ -157,11 +159,11 @@ class PaymentController extends Controller implements HasMiddleware
     }
 
     /**
-     * Suppression logique.
+     * Supprimer un paiement.
      */
     public function destroy(Payment $payment)
     {
-        $payment->delete();
+        PaymentService::delete($payment);
 
         return response()->json([
 

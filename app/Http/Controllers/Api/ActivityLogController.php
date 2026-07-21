@@ -3,11 +3,31 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\ActivityLog;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ActivityLogController extends Controller
+class ActivityLogController extends Controller implements HasMiddleware
 {
+    /**
+     * Middlewares du contrôleur.
+     */
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:activity-logs.view',
+                only: [
+                    'index',
+                    'show',
+                ]
+            ),
+
+        ];
+    }
+
     /**
      * Liste des activités.
      */
@@ -26,7 +46,10 @@ class ActivityLogController extends Controller
 
         if ($request->filled('user_id')) {
 
-            $query->where('causer_id', $request->user_id);
+            $query->where(
+                'causer_id',
+                $request->user_id
+            );
 
         }
 
@@ -38,19 +61,25 @@ class ActivityLogController extends Controller
 
         if ($request->filled('module')) {
 
-            $query->where('log_name', $request->module);
+            $query->where(
+                'log_name',
+                $request->module
+            );
 
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Filtre par action
+        | Filtre par événement
         |--------------------------------------------------------------------------
         */
 
         if ($request->filled('event')) {
 
-            $query->where('description', $request->event);
+            $query->where(
+                'event',
+                $request->event
+            );
 
         }
 
@@ -84,6 +113,8 @@ class ActivityLogController extends Controller
 
             'success' => true,
 
+            'message' => 'Liste des activités récupérée avec succès.',
+
             'data' => $query
                 ->latest()
                 ->paginate(20),
@@ -100,9 +131,14 @@ class ActivityLogController extends Controller
 
             'success' => true,
 
+            'message' => 'Activité récupérée avec succès.',
+
             'data' => $activity->load([
+
                 'causer',
+
                 'subject',
+
             ]),
 
         ]);

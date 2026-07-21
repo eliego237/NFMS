@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrainingRequest;
 use App\Http\Requests\UpdateTrainingRequest;
 use App\Models\Training;
+use App\Services\TrainingService;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -20,22 +21,31 @@ class TrainingController extends Controller implements HasMiddleware
 
             new Middleware(
                 'permission:trainings.view',
-                only: ['index', 'show']
+                only: [
+                    'index',
+                    'show',
+                ]
             ),
 
             new Middleware(
                 'permission:trainings.create',
-                only: ['store']
+                only: [
+                    'store',
+                ]
             ),
 
             new Middleware(
                 'permission:trainings.update',
-                only: ['update']
+                only: [
+                    'update',
+                ]
             ),
 
             new Middleware(
                 'permission:trainings.delete',
-                only: ['destroy']
+                only: [
+                    'destroy',
+                ]
             ),
 
         ];
@@ -46,20 +56,24 @@ class TrainingController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        return response()->json(
+        return response()->json([
 
-            Training::with([
-                'modules',
-            ])
-            ->withCount([
-                'modules',
-                'enrollments',
-            ])
-            ->orderBy('category')
-            ->orderBy('title')
-            ->get()
+            'success' => true,
 
-        );
+            'message' => 'Liste des formations récupérée avec succès.',
+
+            'data' => Training::with([
+                    'modules',
+                ])
+                ->withCount([
+                    'modules',
+                    'enrollments',
+                ])
+                ->orderBy('category')
+                ->orderBy('title')
+                ->get(),
+
+        ]);
     }
 
     /**
@@ -67,27 +81,13 @@ class TrainingController extends Controller implements HasMiddleware
      */
     public function store(StoreTrainingRequest $request)
     {
-        $training = Training::create([
-
-            'code' => $request->code,
-
-            'title' => $request->title,
-
-            'category' => $request->category,
-
-            'description' => $request->description,
-
-            'price' => $request->price,
-
-            'duration_months' => $request->duration_months,
-
-            'certificate' => $request->certificate,
-
-            'is_active' => $request->boolean('is_active', true),
-
-        ]);
+        $training = TrainingService::store(
+            $request->validated()
+        );
 
         return response()->json([
+
+            'success' => true,
 
             'message' => 'Formation créée avec succès.',
 
@@ -101,48 +101,43 @@ class TrainingController extends Controller implements HasMiddleware
      */
     public function show(Training $training)
     {
-        return response()->json(
+        return response()->json([
 
-            $training->load([
+            'success' => true,
+
+            'message' => 'Formation récupérée avec succès.',
+
+            'data' => $training->load([
                 'modules',
                 'enrollments.student',
-            ])
+            ]),
 
-        );
+        ]);
     }
 
     /**
      * Modifier une formation.
      */
-    public function update(UpdateTrainingRequest $request, Training $training)
-    {
-        $training->update([
+    public function update(
+        UpdateTrainingRequest $request,
+        Training $training
+    ) {
 
-            'code' => $request->code,
-
-            'title' => $request->title,
-
-            'category' => $request->category,
-
-            'description' => $request->description,
-
-            'price' => $request->price,
-
-            'duration_months' => $request->duration_months,
-
-            'certificate' => $request->certificate,
-
-            'is_active' => $request->boolean('is_active', true),
-
-        ]);
+        $training = TrainingService::update(
+            $training,
+            $request->validated()
+        );
 
         return response()->json([
 
+            'success' => true,
+
             'message' => 'Formation modifiée avec succès.',
 
-            'data' => $training->fresh()->load('modules'),
+            'data' => $training,
 
         ]);
+
     }
 
     /**
@@ -154,7 +149,9 @@ class TrainingController extends Controller implements HasMiddleware
 
             return response()->json([
 
-                'message' => 'Impossible de supprimer une formation ayant déjà des inscriptions.'
+                'success' => false,
+
+                'message' => 'Impossible de supprimer une formation ayant déjà des inscriptions.',
 
             ], 422);
 
@@ -164,17 +161,21 @@ class TrainingController extends Controller implements HasMiddleware
 
             return response()->json([
 
-                'message' => 'Impossible de supprimer une formation contenant des modules.'
+                'success' => false,
+
+                'message' => 'Impossible de supprimer une formation contenant des modules.',
 
             ], 422);
 
         }
 
-        $training->delete();
+        TrainingService::delete($training);
 
         return response()->json([
 
-            'message' => 'Formation supprimée avec succès.'
+            'success' => true,
+
+            'message' => 'Formation supprimée avec succès.',
 
         ]);
     }

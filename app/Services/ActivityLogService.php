@@ -2,39 +2,51 @@
 
 namespace App\Services;
 
-use App\Models\ActivityLog;
-
 class ActivityLogService
 {
     public static function log(
         string $module,
         string $event,
-        $model
+        $subject = null,
+        array $properties = []
     ): void {
 
-        ActivityLog::create([
+        $descriptions = [
 
-            'log_name' => $module,
+            'login'   => 'Connexion',
 
-            'description' => $event,
+            'logout'  => 'Déconnexion',
 
-            'event' => strtolower($event),
+            'created' => 'Création',
 
-            'subject_type' => get_class($model),
+            'updated' => 'Modification',
 
-            'subject_id' => $model->id,
+            'deleted' => 'Suppression',
 
-            'causer_type' => auth()->check()
-                ? get_class(auth()->user())
-                : null,
+            'printed' => 'Impression',
 
-            'causer_id' => auth()->id(),
+        ];
 
-            'properties' => $model->toArray(),
+        activity($module)
 
-            'attribute_changes' => [],
+            ->causedBy(auth()->user())
 
-        ]);
+            ->performedOn($subject)
 
+            ->event($event)
+
+            ->withProperties(array_merge([
+
+                'ip' => request()->ip(),
+
+                'url' => request()->path(),
+
+                'method' => request()->method(),
+
+                'browser' => request()->userAgent(),
+
+            ], $properties))
+
+            ->log($descriptions[$event] ?? ucfirst($event));
     }
 }

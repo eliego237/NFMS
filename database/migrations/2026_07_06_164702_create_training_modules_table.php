@@ -19,25 +19,33 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            // Code du module
+            // Code unique du module
             $table->string('code')->unique();
 
-            // Nom du module
+            // Intitulé
             $table->string('title');
 
             // Description
             $table->text('description')->nullable();
 
-            // Ordre d'affichage
-            $table->unsignedInteger('position')->default(1);
+            // Durée du module (heures)
+            $table->unsignedInteger('duration_hours');
 
-            // Actif ?
+            // Ordre dans la formation
+            $table->unsignedInteger('position');
+
+            // Module actif
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
 
             $table->softDeletes();
 
+            // Une position unique par formation
+            $table->unique([
+                'training_id',
+                'position',
+            ]);
         });
     }
 

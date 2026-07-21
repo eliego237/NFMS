@@ -53,9 +53,12 @@ class UserController extends Controller implements HasMiddleware
 
             'message' => 'Liste des utilisateurs récupérée avec succès.',
 
-            'data' => User::with('roles')
-                ->latest()
-                ->get(),
+            'data' => User::with([
+                'roles',
+                'permissions',
+            ])
+            ->latest()
+            ->get(),
 
         ]);
     }
@@ -75,7 +78,10 @@ class UserController extends Controller implements HasMiddleware
 
             'message' => 'Utilisateur créé avec succès.',
 
-            'data' => $user,
+            'data' => $user->load([
+                'roles',
+                'permissions',
+            ]),
 
         ], 201);
     }
@@ -91,41 +97,83 @@ class UserController extends Controller implements HasMiddleware
 
             'message' => 'Utilisateur récupéré avec succès.',
 
-            'data' => $user->load('roles'),
+            'data' => $user->load([
+                'roles',
+                'permissions',
+            ]),
 
         ]);
     }
 
     /**
-     * Modifier un utilisateur.
-     */
-    public function update(
-        UpdateUserRequest $request,
-        User $user
-    ) {
+ * Modifier un utilisateur.
+ */
+public function update(
+    UpdateUserRequest $request,
+    User $user
+) {
 
-        $user = UserService::update(
-            $user,
-            $request->validated()
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | Protéger le Super Administrateur
+    |--------------------------------------------------------------------------
+    */
+
+    if ($user->id === User::min('id')) {
 
         return response()->json([
 
-            'success' => true,
+            'success' => false,
 
-            'message' => 'Utilisateur modifié avec succès.',
+            'message' => 'Le Super Administrateur ne peut pas être modifié.',
 
-            'data' => $user,
-
-        ]);
+        ], 403);
 
     }
+
+    $user = UserService::update(
+        $user,
+        $request->validated()
+    );
+
+    return response()->json([
+
+        'success' => true,
+
+        'message' => 'Utilisateur modifié avec succès.',
+
+        'data' => $user->load([
+            'roles',
+            'permissions',
+        ]),
+
+    ]);
+
+}
 
     /**
      * Supprimer un utilisateur.
      */
     public function destroy(User $user)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Protection du Super Administrateur
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user->id === 2) {
+
+            return response()->json([
+
+                'success' => false,
+
+                'message' => 'Le Super Administrateur ne peut pas être supprimé.',
+
+            ], 403);
+
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Empêcher la suppression du dernier administrateur

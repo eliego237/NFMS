@@ -21,92 +21,89 @@
 }
 
 body{
-
     font-family:DejaVu Sans,sans-serif;
-
-    font-size:12px;
-
-    color:#333;
-
+    font-size:11px;
+    color:#222;
 }
 
 .wrapper{
-
     position:relative;
-
     width:100%;
-
-    border:1px solid #cfcfcf;
-
+    border:1px solid #d8d8d8;
     padding:8px;
-
+    overflow:hidden;
 }
 
-/*==================================================
-FILIGRANE NEW FASHION
-==================================================*/
+/*==========================================
+FILIGRANE
+==========================================*/
 
 .watermark{
 
     position:absolute;
 
-    top:55px;
-
+    top:70px;
     left:0;
 
     width:100%;
 
     text-align:center;
 
-    color:#0d6efd;
+    font-size:22px;
 
-    font-size:24px;
-
-    line-height:32px;
+    line-height:30px;
 
     font-weight:bold;
 
-    opacity:.05;
+    color:#0d6efd;
+
+    opacity:.09;
+
+    z-index:0;
 
 }
 
-/*==================================================
-CACHET PAYE
-==================================================*/
+/*==========================================
+CACHET PAYÉ
+==========================================*/
 
 .paid{
 
     position:absolute;
 
-    top:200px;
+    top:215px;
 
-    left:760px;
+    right:20px;
 
-    font-size:90px;
-
-    color:#dc3545;
+    font-size:60px;
 
     font-weight:bold;
 
-    opacity:.15;
+    color:#dc3545;
 
-    transform:rotate(-25deg);
+    opacity:.18;
+
+    transform:rotate(-20deg);
+
+    z-index:1;
 
 }
 
-/*==================================================
+/*==========================================
 HEADER
-==================================================*/
+==========================================*/
 
 .header{
 
-    width:100%;
+    position:relative;
+
+    z-index:2;
 
     border-bottom:2px solid #0d6efd;
 
-    padding-bottom:6px;
+    padding-bottom:8px;
 
-    margin-bottom:8px;
+    margin-bottom:10px;
 
 }
 
@@ -120,7 +117,7 @@ HEADER
 
 .logo{
 
-    width:15%;
+    width:14%;
 
     text-align:center;
 
@@ -128,13 +125,13 @@ HEADER
 
 .logo img{
 
-    width:60px;
+    width:70px;
 
 }
 
 .school{
 
-    width:60%;
+    width:61%;
 
     text-align:center;
 
@@ -142,17 +139,19 @@ HEADER
 
 .school-name{
 
+    font-size:28px;
+
     color:#0d6efd;
 
-    font-size:40px;
-
     font-weight:bold;
+
+    letter-spacing:.5px;
 
 }
 
 .school-sub{
 
-    font-size:12px;
+    font-size:13px;
 
     font-weight:bold;
 
@@ -162,9 +161,11 @@ HEADER
 
 .school-info{
 
-    font-size:9px;
+    font-size:11px;
 
-    color:#666;
+    color:#555;
+
+    line-height:1.45;
 
 }
 
@@ -190,9 +191,9 @@ HEADER
 
     padding:5px;
 
-    font-weight:bold;
+    font-size:11px;
 
-    font-size:9px;
+    font-weight:bold;
 
 }
 
@@ -202,11 +203,11 @@ HEADER
 
     color:#dc3545;
 
-    font-size:16px;
+    font-size:18px;
 
     font-weight:bold;
 
-    padding-top:8px;
+    padding-top:10px;
 
 }
 
@@ -214,17 +215,17 @@ HEADER
 
     text-align:center;
 
-    color:#777;
+    color:#666;
 
     padding:6px;
 
-    font-size:12px;
+    font-size:14px;
 
 }
 
-/*==================================================
-TABLEAUX
-==================================================*/
+/*==========================================
+TABLES
+==========================================*/
 
 .table{
 
@@ -232,7 +233,11 @@ TABLEAUX
 
     border-collapse:collapse;
 
-    margin-top:7px;
+    margin-top:8px;
+
+    position:relative;
+
+    z-index:2;
 
 }
 
@@ -240,13 +245,13 @@ TABLEAUX
 
     background:#0d6efd;
 
-    color:white;
+    color:#fff;
 
-    padding:5px;
+    padding:6px;
+
+    font-size:11px;
 
     border:1px solid #0d6efd;
-
-    font-size:12px;
 
 }
 
@@ -266,15 +271,19 @@ TABLEAUX
 
     font-weight:bold;
 
-    font-size:12px;
+    font-size:11px;
+
+    margin-bottom:2px;
 
 }
 
 .value{
 
-    font-size:12px;
+    color:#222;
 
-    color:#333;
+    font-size:11px;
+
+    margin-bottom:6px;
 
 }
 
@@ -282,7 +291,7 @@ TABLEAUX
 
     color:#198754;
 
-    font-size:12px;
+    font-size:13px;
 
     font-weight:bold;
 
@@ -302,35 +311,25 @@ TABLEAUX
 
 }
 
-.small{
-
-    font-size:9px;
-
-}
-
 .space{
 
-    height:5px;
+    height:6px;
 
 }
 
-/*==================================================
-FOOTER
-==================================================*/
+.footer-dev{
 
-.footer{
+    margin-top:8px;
 
-    margin-top:6px;
-
-    border-top:1px solid #d8d8d8;
+    border-top:1px solid #ddd;
 
     padding-top:5px;
 
-    font-size:9px;
-
     text-align:center;
 
-    color:#555;
+    font-size:8px;
+
+    color:#777;
 
 }
 
@@ -342,60 +341,48 @@ FOOTER
 
 <div class="wrapper">
 
-<!-- ==================================================
-FILIGRANE NEW FASHION
-================================================== -->
-
 <div class="watermark">
 
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-</div>
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO<br>
 
-<!-- ==================================================
-CACHET PAYE
-================================================== -->
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION<br>
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO<br>
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION<br>
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO<br>
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
+
+NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
+
+ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
+</div>
 
 <div class="paid">
 
 PAYÉ
 
 </div>
-
-<!-- ==================================================
-HEADER
-================================================== -->
 
 <div class="header">
 
@@ -405,7 +392,7 @@ HEADER
 
 <td class="logo">
 
-<img src="{{ $logo }}" width="80">
+<img src="{{ $logo }}">
 
 </td>
 
@@ -431,7 +418,7 @@ Douala - Ndogbong Face Socaver
 
 <div class="school-info">
 
-(+237) 676 26 68 65 • (+237) 655 36 19 46
+(+237) 676 26 68 65 • 655 36 19 46
 
 </div>
 
@@ -481,532 +468,252 @@ REÇU DE PAIEMENT
 
 </div>
 
-<!-- ==================================================
-ETUDIANT / FORMATION / PAIEMENT
-================================================== -->
+<!-- ==========================================================
+    INFORMATIONS PRINCIPALES
+=========================================================== -->
 
 <table class="table">
 
-<tr>
+    <tr>
 
-<th width="33%">
+        <th width="35%">ÉTUDIANT</th>
 
-ÉTUDIANT
+        <th width="30%">FORMATION</th>
 
-</th>
+        <th width="35%">PAIEMENT</th>
 
-<th width="34%">
+    </tr>
 
-FORMATION
+    <tr>
 
-</th>
+        <!-- ================= ETUDIANT ================= -->
 
-<th width="33%">
+        <td>
 
-PAIEMENT
+            <div class="label">Matricule</div>
+            <div class="value">
+                {{ $payment->enrollment->student->matricule }}
+            </div>
 
-</th>
+            <div class="label">Nom complet</div>
+            <div class="value">
+                {{ $payment->enrollment->student->first_name }}
+                {{ $payment->enrollment->student->last_name }}
+            </div>
 
-</tr>
+            <div class="label">Téléphone</div>
+            <div class="value">
+                {{ $payment->enrollment->student->phone }}
+            </div>
 
-<tr>
+        </td>
 
-<td>
+        <!-- ================= FORMATION ================= -->
 
-<div class="label">Matricule</div>
+        <td>
 
-<div class="value">
+            <div class="label">Code Formation</div>
+            <div class="value">
+                {{ $payment->enrollment->training->code }}
+            </div>
 
-{{ $payment->enrollment->student->matricule }}
+            <div class="label">Catégorie</div>
+            <div class="value">
+                {{ $payment->enrollment->training->category }}
+            </div>
 
-</div>
+            <div class="label">Durée</div>
+            <div class="value">
+                {{ $payment->enrollment->training->duration_months }} mois
+            </div>
 
-<div class="space"></div>
+        </td>
 
-<div class="label">
+        <!-- ================= PAIEMENT ================= -->
 
-Nom complet
+        <td>
 
-</div>
+            <div class="label">Montant payé</div>
+            <div class="amount">
+                {{ number_format($payment->amount,0,',',' ') }} FCFA
+            </div>
 
-<div class="value">
+            <div class="label">Mode de paiement</div>
+            <div class="value">
+                {{ $payment->paymentMethod->name }}
+            </div>
 
-{{ $payment->enrollment->student->first_name }}
-{{ $payment->enrollment->student->last_name }}
+            <div class="label">Caissier</div>
+            <div class="value">
+                {{ $payment->receiver->name }}
+            </div>
 
-</div>
+        </td>
 
-<div class="space"></div>
-
-<div class="label">
-
-Téléphone
-
-</div>
-
-<div class="value">
-
-{{ $payment->enrollment->student->phone }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Email
-
-</div>
-
-<div class="value">
-
-{{ $payment->enrollment->student->email ?? '-' }}
-
-</div>
-
-</td>
-
-<td>
-
-<div class="label">
-
-Code Formation
-
-</div>
-
-<div class="value">
-
-{{ $payment->enrollment->training->code }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Formation
-
-</div>
-
-<div class="value">
-
-{{ $payment->enrollment->training->title }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Durée
-
-</div>
-
-<div class="value">
-
-{{ $payment->enrollment->training->duration_months }} mois
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Catégorie
-
-</div>
-
-<div class="value">
-
-{{ $payment->enrollment->training->category }}
-
-</div>
-
-</td>
-
-<td>
-
-<div class="label">
-
-Référence
-
-</div>
-
-<div class="value">
-
-{{ $payment->receipt_number }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Date
-
-</div>
-
-<div class="value">
-
-{{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Montant payé
-
-</div>
-
-<div class="amount">
-
-{{ number_format($payment->amount,0,',',' ') }} FCFA
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Mode de paiement
-
-</div>
-
-<div class="value">
-
-{{ $payment->paymentMethod->name }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Caissier
-
-</div>
-
-<div class="value">
-
-{{ $payment->receiver->name }}
-
-</div>
-
-</td>
-
-</tr>
+    </tr>
 
 </table>
 
-<!-- ==================================================
-RÉCAPITULATIF FINANCIER
-================================================== -->
+
+<!-- ==========================================================
+    RÉCAPITULATIF FINANCIER
+=========================================================== -->
 
 <table class="table">
 
-<tr>
+    <tr>
 
-<th colspan="2">
+        <th colspan="7">
 
-RÉCAPITULATIF FINANCIER
+            RÉCAPITULATIF FINANCIER
 
-</th>
+        </th>
 
-</tr>
+    </tr>
 
-<tr>
+    <tr>
 
-<td width="65%">
+        <td width="18%" class="center">
 
-<div class="label">
+            <div class="label">N° Inscription</div>
 
-Numéro d'inscription
+            <div class="value">
+                {{ $payment->enrollment->enrollment_number }}
+            </div>
 
-</div>
+        </td>
 
-<div class="value">
+        <td width="14%" class="center">
 
-{{ $payment->enrollment->enrollment_number }}
+            <div class="label">Année</div>
 
-</div>
+            <div class="value">
+                {{ $payment->enrollment->academic_year }}
+            </div>
 
-<div class="space"></div>
+        </td>
 
-<div class="label">
+        <td width="14%" class="center">
 
-Année académique
+            <div class="label">Total</div>
 
-</div>
+            <div class="value">
+                {{ number_format($payment->enrollment->total_amount,0,',',' ') }} FCFA
+            </div>
 
-<div class="value">
+        </td>
 
-{{ $payment->enrollment->academic_year }}
+        <td width="12%" class="center">
 
-</div>
+            <div class="label">Remise</div>
 
-<div class="space"></div>
+            <div class="value" style="color:#ff9800;font-weight:bold;">
 
-<div class="label">
+                {{ $payment->enrollment->formatted_discount }}
 
-Statut
+            </div>
 
-</div>
+        </td>
 
-<div class="value">
+        <td width="15%" class="center">
 
-{{ $payment->enrollment->formatted_status }}
+            <div class="label">Net à payer</div>
 
-</div>
+            <div class="value">
 
-<div class="space"></div>
+                {{ number_format($payment->enrollment->total_amount - $payment->enrollment->discount_amount,0,',',' ') }} FCFA
 
-<div class="label">
+            </div>
 
-Progression du paiement
+        </td>
 
-</div>
+        <td width="13%" class="center">
 
-<div class="value">
+            <div class="label">Déjà payé</div>
 
-{{ $payment->enrollment->payment_progress }} %
+            <div class="value" style="color:#198754;font-weight:bold;">
 
-</div>
+                {{ $payment->enrollment->formatted_amount_paid }}
 
-</td>
+            </div>
 
-<td width="35%">
+        </td>
 
-<table style="width:100%;border-collapse:collapse;">
+        <td width="14%" class="center">
 
-<tr>
+            <div class="label red">Reste</div>
 
-<td>Frais d'inscription</td>
+            <div class="red">
 
-<td align="right">
+                {{ $payment->enrollment->formatted_balance }}
 
-{{ $payment->enrollment->formatted_registration_fee }}
+            </div>
 
-</td>
+        </td>
 
-</tr>
-
-<tr>
-
-<td>Frais de formation</td>
-
-<td align="right">
-
-{{ $payment->enrollment->formatted_training_fee }}
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>Remise</td>
-
-<td align="right">
-
-{{ $payment->enrollment->formatted_discount }}
-
-</td>
-
-</tr>
-
-<tr>
-
-<td><b>Total</b></td>
-
-<td align="right">
-
-{{ number_format($payment->enrollment->total_amount,0,',',' ') }} FCFA
-
-</td>
-
-</tr>
-
-<tr>
-
-<td><b>Déjà payé</b></td>
-
-<td align="right">
-
-{{ $payment->enrollment->formatted_amount_paid }}
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
-<b>Reste à payer</b>
-
-</td>
-
-<td align="right" class="red">
-
-{{ $payment->enrollment->formatted_balance }}
-
-</td>
-
-</tr>
+    </tr>
 
 </table>
 
-</td>
-
-</tr>
-
-</table>
-
-<!-- ==================================================
-QR CODE / OBSERVATIONS / SIGNATURES
-================================================== -->
+<!-- ==========================================================
+    OBSERVATIONS & SIGNATURE
+=========================================================== -->
 
 <table class="table">
 
-<tr>
+    <tr>
 
-<th width="25%">
+        <th width="70%">
+            OBSERVATIONS
+        </th>
 
-VÉRIFICATION
+        <th width="30%">
+            SIGNATURE
+        </th>
 
-</th>
+    </tr>
 
-<th width="45%">
+    <tr>
 
-OBSERVATIONS
+            <div class="value">
 
-</th>
+                Les frais de scolarité ne sont ni remboursables
+                ni transférables.
 
-<th width="30%">
+            </div>
 
-SIGNATURES
+            <div class="space"></div>
 
-</th>
+            <div class="value">
 
-</tr>
+                Toute modification ou falsification rend
+                ce reçu invalide.
 
-<tr>
+            </div>
 
-<td class="center">
+        </td>
 
-<img src="{{ $qrcode }}" width="85">
+        <!-- ===========================
+             SIGNATURE
+        ============================ -->
 
-<div class="small">
+        <td class="center">
 
-Scan Me.
+            <div style="margin-top:5px;">
 
-</div>
+                Le Caissier
 
-</td>
+            </div>
 
-<td>
+            <br>
 
-<div class="label">
+            ________________________
 
-Référence
+        </td>
 
-</div>
-
-<div class="value">
-
-{{ $payment->receipt_number }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Lien de vérification
-
-</div>
-
-<div class="small">
-
-{{ route('receipt.verify',$payment->receipt_number) }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Date d'impression
-
-</div>
-
-<div class="small">
-
-{{ now()->format('d/m/Y H:i') }}
-
-</div>
-
-<div class="space"></div>
-
-<div class="label">
-
-Observation
-
-</div>
-
-<div class="small">
-
-les frais de scolarité ne sont ni remboursable, ni transférables
-
-Toute modification ou falsification rend ce document nul.
-
-</div>
-
-</td>
-
-<td>
-
-<div class="center">
-
-Le Caissier
-
-<br><br><br><br>
-
-_____________________
-
-</div>
-
-<br>
-
-<div class="center">
-
-La Direction
-
-<br><br><br><br>
-
-_____________________
-
-</div>
-
-</td>
-
-</tr>
-
+    </tr>
+    
 </table>
-
-<!-- ==================================================
-FOOTER
-================================================== -->
-
-<div class="footer">
-
-Document officiel NEW FASHION • Toute falsification est interdite •
-Authentification par QR Code •
-© {{ date('Y') }} NEW FASHION
-
-</div>
 
 </div>
 

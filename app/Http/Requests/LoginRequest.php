@@ -11,6 +11,19 @@ class LoginRequest extends FormRequest
         return true;
     }
 
+    public function messages(): array
+{
+    return [
+
+        'email.required' => 'L\'adresse email est obligatoire.',
+
+        'email.email' => 'Le format de l\'adresse email est invalide.',
+
+        'password.required' => 'Le mot de passe est obligatoire.',
+
+    ];
+}
+
     public function rules(): array
     {
         return [

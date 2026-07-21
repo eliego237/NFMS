@@ -7,25 +7,38 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Training;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardChartService
 {
     /**
+     * Durée du cache (5 minutes).
+     */
+    private const CACHE_TIME = 300;
+
+    /**
      * Paiements par mois.
      */
     public static function monthlyPayments(): array
     {
-        $data = Payment::selectRaw("
-                CAST(strftime('%m', payment_date) AS INTEGER) as month,
-                SUM(amount) as total
-            ")
-            ->whereRaw("strftime('%Y', payment_date) = ?", [now()->format('Y')])
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
+        return Cache::remember(
+            'dashboard.chart.payments',
+            self::CACHE_TIME,
+            function () {
 
-        return self::formatMonths($data);
+                $data = Payment::query()
+                    ->selectRaw('MONTH(payment_date) as month')
+                    ->selectRaw('SUM(amount) as total')
+                    ->whereYear('payment_date', now()->year)
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->pluck('total', 'month');
+
+                return self::formatMonths($data);
+
+            }
+        );
     }
 
     /**
@@ -33,16 +46,23 @@ class DashboardChartService
      */
     public static function monthlyExpenses(): array
     {
-        $data = Expense::selectRaw("
-                CAST(strftime('%m', expense_date) AS INTEGER) as month,
-                SUM(amount) as total
-            ")
-            ->whereRaw("strftime('%Y', expense_date) = ?", [now()->format('Y')])
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
+        return Cache::remember(
+            'dashboard.chart.expenses',
+            self::CACHE_TIME,
+            function () {
 
-        return self::formatMonths($data);
+                $data = Expense::query()
+                    ->selectRaw('MONTH(expense_date) as month')
+                    ->selectRaw('SUM(amount) as total')
+                    ->whereYear('expense_date', now()->year)
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->pluck('total', 'month');
+
+                return self::formatMonths($data);
+
+            }
+        );
     }
 
     /**
@@ -50,16 +70,23 @@ class DashboardChartService
      */
     public static function monthlyEnrollments(): array
     {
-        $data = Enrollment::selectRaw("
-                CAST(strftime('%m', created_at) AS INTEGER) as month,
-                COUNT(*) as total
-            ")
-            ->whereRaw("strftime('%Y', created_at) = ?", [now()->format('Y')])
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
+        return Cache::remember(
+            'dashboard.chart.enrollments',
+            self::CACHE_TIME,
+            function () {
 
-        return self::formatMonths($data);
+                $data = Enrollment::query()
+                    ->selectRaw('MONTH(created_at) as month')
+                    ->selectRaw('COUNT(*) as total')
+                    ->whereYear('created_at', now()->year)
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->pluck('total', 'month');
+
+                return self::formatMonths($data);
+
+            }
+        );
     }
 
     /**
@@ -67,21 +94,31 @@ class DashboardChartService
      */
     public static function paymentMethods()
     {
-        return PaymentMethod::select(
-                'payment_methods.name',
-                DB::raw('COUNT(payments.id) as total')
-            )
-            ->leftJoin(
-                'payments',
-                'payments.payment_method_id',
-                '=',
-                'payment_methods.id'
-            )
-            ->groupBy(
-                'payment_methods.id',
-                'payment_methods.name'
-            )
-            ->get();
+        return Cache::remember(
+            'dashboard.chart.payment_methods',
+            self::CACHE_TIME,
+            function () {
+
+                return PaymentMethod::query()
+                    ->select(
+                        'payment_methods.name',
+                        DB::raw('COUNT(payments.id) as total')
+                    )
+                    ->leftJoin(
+                        'payments',
+                        'payments.payment_method_id',
+                        '=',
+                        'payment_methods.id'
+                    )
+                    ->groupBy(
+                        'payment_methods.id',
+                        'payment_methods.name'
+                    )
+                    ->orderByDesc('total')
+                    ->get();
+
+            }
+        );
     }
 
     /**
@@ -89,23 +126,32 @@ class DashboardChartService
      */
     public static function topTrainings()
     {
-        return Training::select(
-                'trainings.title',
-                DB::raw('COUNT(enrollments.id) as total')
-            )
-            ->leftJoin(
-                'enrollments',
-                'enrollments.training_id',
-                '=',
-                'trainings.id'
-            )
-            ->groupBy(
-                'trainings.id',
-                'trainings.title'
-            )
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
+        return Cache::remember(
+            'dashboard.chart.trainings',
+            self::CACHE_TIME,
+            function () {
+
+                return Training::query()
+                    ->select(
+                        'trainings.title',
+                        DB::raw('COUNT(enrollments.id) as total')
+                    )
+                    ->leftJoin(
+                        'enrollments',
+                        'enrollments.training_id',
+                        '=',
+                        'trainings.id'
+                    )
+                    ->groupBy(
+                        'trainings.id',
+                        'trainings.title'
+                    )
+                    ->orderByDesc('total')
+                    ->limit(5)
+                    ->get();
+
+            }
+        );
     }
 
     /**
@@ -115,15 +161,16 @@ class DashboardChartService
     {
         $months = [];
 
-        for ($i = 1; $i <= 12; $i++) {
+        for ($month = 1; $month <= 12; $month++) {
 
             $months[] = [
 
-                'month' => $i,
+                'month' => $month,
 
-                'total' => (float) ($collection[$i] ?? 0),
+                'total' => (float) ($collection[$month] ?? 0),
 
             ];
+
         }
 
         return $months;

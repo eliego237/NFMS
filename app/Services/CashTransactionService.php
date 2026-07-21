@@ -12,10 +12,15 @@ class CashTransactionService
     /**
      * Enregistrer une entrée de caisse provenant d'un paiement.
      */
-    public static function recordPayment(Payment $payment): CashTransaction
-    {
-        // Charger les relations si elles ne le sont pas déjà
-        $payment->loadMissing('enrollment.student');
+    public static function recordPayment(
+        Payment $payment
+    ): CashTransaction {
+
+        $payment->loadMissing([
+            'enrollment.student',
+            'paymentMethod',
+            'receiver',
+        ]);
 
         $student = $payment->enrollment->student;
 
@@ -41,15 +46,15 @@ class CashTransactionService
 
         /*
         |--------------------------------------------------------------------------
-        | Création de l'opération de caisse
+        | Création de la transaction
         |--------------------------------------------------------------------------
         */
 
-        return CashTransaction::create([
+        $transaction = CashTransaction::create([
 
             'transaction_number' => $transactionNumber,
 
-            'type' => 'Entrée',
+            'type' => CashTransaction::TYPE_INCOME,
 
             'category' => 'Paiement formation',
 
@@ -75,13 +80,47 @@ class CashTransactionService
             'notes' => $payment->notes,
 
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Journal d'activité
+        |--------------------------------------------------------------------------
+        */
+
+        ActivityLogService::log(
+
+            module: 'cash',
+
+            event: 'income',
+
+            subject: $transaction,
+
+            properties: [
+
+                'transaction' => $transaction->transaction_number,
+
+                'type' => CashTransaction::TYPE_INCOME,
+
+                'montant' => $transaction->amount,
+
+                'etudiant' => $student->full_name,
+
+                'recu' => $payment->receipt_number,
+
+            ]
+
+        );
+
+        return $transaction;
     }
 
     /**
      * Enregistrer une sortie de caisse provenant d'une dépense.
      */
-    public static function recordExpense(Expense $expense): CashTransaction
-    {
+    public static function recordExpense(
+        Expense $expense
+    ): CashTransaction {
+
         /*
         |--------------------------------------------------------------------------
         | Génération du numéro de transaction
@@ -104,15 +143,15 @@ class CashTransactionService
 
         /*
         |--------------------------------------------------------------------------
-        | Création de l'opération de caisse
+        | Création de la transaction
         |--------------------------------------------------------------------------
         */
 
-        return CashTransaction::create([
+        $transaction = CashTransaction::create([
 
             'transaction_number' => $transactionNumber,
 
-            'type' => 'Sortie',
+            'type' => CashTransaction::TYPE_EXPENSE,
 
             'category' => $expense->category,
 
@@ -133,5 +172,37 @@ class CashTransactionService
             'notes' => $expense->notes,
 
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Journal d'activité
+        |--------------------------------------------------------------------------
+        */
+
+        ActivityLogService::log(
+
+            module: 'cash',
+
+            event: 'expense',
+
+            subject: $transaction,
+
+            properties: [
+
+                'transaction' => $transaction->transaction_number,
+
+                'type' => CashTransaction::TYPE_EXPENSE,
+
+                'categorie' => $expense->category,
+
+                'libelle' => $expense->title,
+
+                'montant' => $expense->amount,
+
+            ]
+
+        );
+
+        return $transaction;
     }
 }

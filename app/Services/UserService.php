@@ -17,15 +17,13 @@ class UserService
 
             $user = User::create([
 
-                'name' => $data['name'],
+                'name' => trim($data['first_name'].' '.$data['last_name']),
+
+                'first_name' => $data['first_name'],
+
+                'last_name' => $data['last_name'],
 
                 'email' => $data['email'],
-
-                'password' => Hash::make($data['password']),
-
-                'first_name' => $data['first_name'] ?? null,
-
-                'last_name' => $data['last_name'] ?? null,
 
                 'phone' => $data['phone'] ?? null,
 
@@ -33,13 +31,17 @@ class UserService
 
                 'status' => $data['status'] ?? true,
 
+                'password' => Hash::make($data['password']),
+
             ]);
 
-            $user->assignRole(
-                $data['role']
-            );
+            // Attribution des rôles
+            $user->syncRoles($data['roles']);
 
-            return $user->fresh('roles');
+            return $user->load(
+                'roles',
+                'permissions'
+            );
 
         });
     }
@@ -52,20 +54,17 @@ class UserService
         array $data
     ): User {
 
-        return DB::transaction(function () use (
-            $user,
-            $data
-        ) {
+        return DB::transaction(function () use ($user, $data) {
 
             $user->update([
 
-                'name' => $data['name'],
+                'name' => trim($data['first_name'].' '.$data['last_name']),
+
+                'first_name' => $data['first_name'],
+
+                'last_name' => $data['last_name'],
 
                 'email' => $data['email'],
-
-                'first_name' => $data['first_name'] ?? null,
-
-                'last_name' => $data['last_name'] ?? null,
 
                 'phone' => $data['phone'] ?? null,
 
@@ -74,12 +73,6 @@ class UserService
                 'status' => $data['status'] ?? true,
 
             ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Mise à jour du mot de passe
-            |--------------------------------------------------------------------------
-            */
 
             if (!empty($data['password'])) {
 
@@ -93,17 +86,17 @@ class UserService
 
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Mise à jour du rôle
-            |--------------------------------------------------------------------------
-            */
+            // Synchronisation des rôles
+            if (isset($data['roles'])) {
 
-            $user->syncRoles([
-                $data['role'],
-            ]);
+                $user->syncRoles($data['roles']);
 
-            return $user->fresh('roles');
+            }
+
+            return $user->load(
+                'roles',
+                'permissions'
+            );
 
         });
     }
@@ -113,6 +106,10 @@ class UserService
      */
     public static function delete(User $user): void
     {
-        $user->delete();
+        DB::transaction(function () use ($user) {
+
+            $user->delete();
+
+        });
     }
 }

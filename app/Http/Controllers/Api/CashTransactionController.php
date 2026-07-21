@@ -10,6 +10,21 @@ use Illuminate\Routing\Controllers\Middleware;
 class CashTransactionController extends Controller implements HasMiddleware
 {
     /**
+     * Relations chargées automatiquement.
+     */
+    private const RELATIONS = [
+
+        'payment',
+
+        'expense',
+
+        'paymentMethod',
+
+        'recorder',
+
+    ];
+
+    /**
      * Middlewares du contrôleur.
      */
     public static function middleware(): array
@@ -35,19 +50,21 @@ class CashTransactionController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        return response()->json(
+        return response()->json([
 
-            CashTransaction::with([
-                'payment',
-                'expense',
-                'paymentMethod',
-                'recorder',
-            ])
-            ->latest('transaction_date')
-            ->latest('id')
-            ->get()
+            'success' => true,
 
-        );
+            'message' => 'Liste des opérations de caisse récupérée avec succès.',
+
+            'data' => CashTransaction::with(self::RELATIONS)
+
+                ->latest('transaction_date')
+
+                ->latest('id')
+
+                ->paginate(20),
+
+        ]);
     }
 
     /**
@@ -55,54 +72,81 @@ class CashTransactionController extends Controller implements HasMiddleware
      */
     public function show(CashTransaction $cashTransaction)
     {
-        return response()->json(
+        return response()->json([
 
-            $cashTransaction->load([
-                'payment',
-                'expense',
-                'paymentMethod',
-                'recorder',
-            ])
+            'success' => true,
 
-        );
+            'message' => 'Transaction récupérée avec succès.',
+
+            'data' => $cashTransaction->load(self::RELATIONS),
+
+        ]);
     }
 
     /**
-     * Entrées de caisse.
+     * Liste des entrées de caisse.
      */
     public function income()
     {
-        return response()->json(
+        return response()->json([
 
-            CashTransaction::with([
-                'payment',
-                'paymentMethod',
-                'recorder',
-            ])
-            ->where('type', 'Entrée')
-            ->latest('transaction_date')
-            ->get()
+            'success' => true,
 
-        );
+            'message' => 'Liste des entrées de caisse récupérée avec succès.',
+
+            'data' => CashTransaction::onlyIncome()
+
+                ->with([
+
+                    'payment.enrollment.student',
+
+                    'payment.enrollment.training',
+
+                    'paymentMethod',
+
+                    'recorder',
+
+                ])
+
+                ->latest('transaction_date')
+
+                ->latest('id')
+
+                ->paginate(20),
+
+        ]);
     }
 
     /**
-     * Sorties de caisse.
+     * Liste des sorties de caisse.
      */
     public function expenses()
     {
-        return response()->json(
+        return response()->json([
 
-            CashTransaction::with([
-                'expense',
-                'paymentMethod',
-                'recorder',
-            ])
-            ->where('type', 'Sortie')
-            ->latest('transaction_date')
-            ->get()
+            'success' => true,
 
-        );
+            'message' => 'Liste des sorties de caisse récupérée avec succès.',
+
+            'data' => CashTransaction::onlyExpenses()
+
+                ->with([
+
+                    'expense',
+
+                    'paymentMethod',
+
+                    'recorder',
+
+                ])
+
+                ->latest('transaction_date')
+
+                ->latest('id')
+
+                ->paginate(20),
+
+        ]);
     }
 
     /**
@@ -110,23 +154,29 @@ class CashTransactionController extends Controller implements HasMiddleware
      */
     public function summary()
     {
-        $income = CashTransaction::where(
-            'type',
-            'Entrée'
-        )->sum('amount');
+        $income = CashTransaction::onlyIncome()
 
-        $expense = CashTransaction::where(
-            'type',
-            'Sortie'
-        )->sum('amount');
+            ->sum('amount');
+
+        $expense = CashTransaction::onlyExpenses()
+
+            ->sum('amount');
 
         return response()->json([
 
-            'total_income' => $income,
+            'success' => true,
 
-            'total_expense' => $expense,
+            'message' => 'Résumé de la caisse récupéré avec succès.',
 
-            'balance' => $income - $expense,
+            'data' => [
+
+                'total_income' => $income,
+
+                'total_expense' => $expense,
+
+                'balance' => $income - $expense,
+
+            ],
 
         ]);
     }

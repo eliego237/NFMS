@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Student;
+use App\Services\StudentService;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -20,22 +21,31 @@ class StudentController extends Controller implements HasMiddleware
 
             new Middleware(
                 'permission:students.view',
-                only: ['index', 'show']
+                only: [
+                    'index',
+                    'show',
+                ]
             ),
 
             new Middleware(
                 'permission:students.create',
-                only: ['store']
+                only: [
+                    'store',
+                ]
             ),
 
             new Middleware(
                 'permission:students.update',
-                only: ['update']
+                only: [
+                    'update',
+                ]
             ),
 
             new Middleware(
                 'permission:students.delete',
-                only: ['destroy']
+                only: [
+                    'destroy',
+                ]
             ),
 
         ];
@@ -46,15 +56,19 @@ class StudentController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        return response()->json(
+        return response()->json([
 
-            Student::with([
-                'latestEnrollment.training',
-            ])
-            ->latest()
-            ->paginate(10)
+            'success' => true,
 
-        );
+            'message' => 'Liste des étudiants récupérée avec succès.',
+
+            'data' => Student::with([
+                    'latestEnrollment.training',
+                ])
+                ->latest()
+                ->paginate(10),
+
+        ]);
     }
 
     /**
@@ -62,46 +76,17 @@ class StudentController extends Controller implements HasMiddleware
      */
     public function store(StoreStudentRequest $request)
     {
-        // Génération automatique du matricule
-        $nextNumber = (Student::max('id') ?? 0) + 1;
-
-        $matricule = sprintf(
-            'NF%s%05d',
-            now()->year,
-            $nextNumber
+        $student = StudentService::store(
+            $request->validated()
         );
-
-        $student = Student::create([
-
-            'matricule' => $matricule,
-
-            'first_name' => $request->first_name,
-
-            'last_name' => $request->last_name,
-
-            'gender' => $request->gender,
-
-            'birth_date' => $request->birth_date,
-
-            'phone' => $request->phone,
-
-            'email' => $request->email,
-
-            'address' => $request->address,
-
-            'emergency_contact' => $request->emergency_contact,
-
-            'photo' => $request->photo,
-
-            'status' => $request->boolean('status', true),
-
-        ]);
 
         return response()->json([
 
+            'success' => true,
+
             'message' => 'Étudiant créé avec succès.',
 
-            'student' => $student,
+            'data' => $student,
 
         ], 201);
     }
@@ -111,28 +96,39 @@ class StudentController extends Controller implements HasMiddleware
      */
     public function show(Student $student)
     {
-        return response()->json(
+        return response()->json([
 
-            $student->load([
+            'success' => true,
+
+            'message' => 'Étudiant récupéré avec succès.',
+
+            'data' => $student->load([
                 'enrollments.training',
                 'enrollments.payments',
-            ])
+            ]),
 
-        );
+        ]);
     }
 
     /**
      * Modifier un étudiant.
      */
-    public function update(UpdateStudentRequest $request, Student $student)
-    {
-        $student->update($request->validated());
+    public function update(
+        UpdateStudentRequest $request,
+        Student $student
+    ) {
+        $student = StudentService::update(
+            $student,
+            $request->validated()
+        );
 
         return response()->json([
 
+            'success' => true,
+
             'message' => 'Étudiant modifié avec succès.',
 
-            'student' => $student->fresh(),
+            'data' => $student,
 
         ]);
     }
@@ -142,22 +138,25 @@ class StudentController extends Controller implements HasMiddleware
      */
     public function destroy(Student $student)
     {
-        // Empêcher la suppression si l'étudiant possède des inscriptions
         if ($student->enrollments()->exists()) {
 
             return response()->json([
 
-                'message' => 'Impossible de supprimer un étudiant ayant des inscriptions.'
+                'success' => false,
+
+                'message' => 'Impossible de supprimer un étudiant ayant des inscriptions.',
 
             ], 422);
 
         }
 
-        $student->delete();
+        StudentService::delete($student);
 
         return response()->json([
 
-            'message' => 'Étudiant supprimé avec succès.'
+            'success' => true,
+
+            'message' => 'Étudiant supprimé avec succès.',
 
         ]);
     }

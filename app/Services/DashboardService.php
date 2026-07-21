@@ -8,225 +8,280 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Training;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardService
 {
+    /**
+     * Durée du cache (secondes).
+     */
+    private const CACHE_TTL = 60;
+
     /**
      * Données du tableau de bord.
      */
     public static function index(): array
     {
-        $today = now()->toDateString();
+        return Cache::remember(
+            'dashboard.index',
+            self::CACHE_TTL,
+            function () {
 
-        $currentMonth = now()->month;
-        $currentYear  = now()->year;
+                /*
+                |--------------------------------------------------------------------------
+                | Dates
+                |--------------------------------------------------------------------------
+                */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Statistiques générales
-        |--------------------------------------------------------------------------
-        */
+                $today = today();
 
-        $students     = Student::count();
+                $currentMonth = now()->month;
 
-        $trainings    = Training::count();
+                $currentYear = now()->year;
 
-        $enrollments  = Enrollment::count();
+                /*
+                |--------------------------------------------------------------------------
+                | Statistiques générales
+                |--------------------------------------------------------------------------
+                */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Statistiques financières
-        |--------------------------------------------------------------------------
-        */
+                $students = Student::count();
 
-        $expectedRevenue = Enrollment::sum('total_amount');
+                $trainings = Training::count();
 
-        $collectedRevenue = Enrollment::sum('amount_paid');
+                $enrollments = Enrollment::count();
 
-        $remainingRevenue = Enrollment::sum('balance');
+                /*
+                |--------------------------------------------------------------------------
+                | Statistiques financières
+                |--------------------------------------------------------------------------
+                */
 
-        $paymentsToday = Payment::whereDate(
-            'payment_date',
-            $today
-        )->sum('amount');
+                $expectedRevenue = Enrollment::sum('total_amount');
 
-        $paymentsMonth = Payment::whereMonth(
-            'payment_date',
-            $currentMonth
-        )
-        ->whereYear(
-            'payment_date',
-            $currentYear
-        )
-        ->sum('amount');
+                $collectedRevenue = Enrollment::sum('amount_paid');
 
-        $expensesMonth = Expense::whereMonth(
-            'expense_date',
-            $currentMonth
-        )
-        ->whereYear(
-            'expense_date',
-            $currentYear
-        )
-        ->sum('amount');
+                $remainingRevenue = Enrollment::sum('balance');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Solde de caisse
-        |--------------------------------------------------------------------------
-        */
+                $paymentsToday = Payment::whereDate(
+                    'payment_date',
+                    $today
+                )->sum('amount');
 
-        $cashIn = CashTransaction::income()
-            ->sum('amount');
+                $paymentsMonth = Payment::whereYear(
+                    'payment_date',
+                    $currentYear
+                )
+                    ->whereMonth(
+                        'payment_date',
+                        $currentMonth
+                    )
+                    ->sum('amount');
 
-        $cashOut = CashTransaction::expense()
-            ->sum('amount');
+                $expensesMonth = Expense::whereYear(
+                    'expense_date',
+                    $currentYear
+                )
+                    ->whereMonth(
+                        'expense_date',
+                        $currentMonth
+                    )
+                    ->sum('amount');
 
-        $cashBalance = $cashIn - $cashOut;
+                /*
+                |--------------------------------------------------------------------------
+                | Situation de caisse
+                |--------------------------------------------------------------------------
+                */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Inscriptions
-        |--------------------------------------------------------------------------
-        */
+                $cashIn = CashTransaction::onlyIncome()
+                    ->sum('amount');
 
-        $pendingEnrollments = Enrollment::where(
-            'status',
-            'pending'
-        )->count();
+                $cashOut = CashTransaction::onlyExpenses()
+                    ->sum('amount');
 
-        $partialEnrollments = Enrollment::where(
-            'status',
-            'partial'
-        )->count();
+                $cashBalance = $cashIn - $cashOut;
 
-        $paidEnrollments = Enrollment::where(
-            'status',
-            'paid'
-        )->count();
+                /*
+                |--------------------------------------------------------------------------
+                | Statistiques des inscriptions
+                |--------------------------------------------------------------------------
+                */
 
-        $studentsWithBalance = Enrollment::where(
-            'balance',
-            '>',
-            0
-        )->count();
+                $pendingEnrollments = Enrollment::where(
+                    'status',
+                    'pending'
+                )->count();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Taux de paiement
-        |--------------------------------------------------------------------------
-        */
+                $partialEnrollments = Enrollment::where(
+                    'status',
+                    'partial'
+                )->count();
 
-        $paymentRate = $expectedRevenue > 0
-            ? round(
-                ($collectedRevenue / $expectedRevenue) * 100,
-                2
-            )
-            : 0;
+                $paidEnrollments = Enrollment::where(
+                    'status',
+                    'paid'
+                )->count();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Activités récentes
-        |--------------------------------------------------------------------------
-        */
+                $studentsWithBalance = Enrollment::where(
+                    'balance',
+                    '>',
+                    0
+                )->count();
 
-        $latestEnrollments = Enrollment::with([
-            'student',
-            'training',
-        ])
-        ->latest()
-        ->take(5)
-        ->get();
+                /*
+                |--------------------------------------------------------------------------
+                | Taux de paiement
+                |--------------------------------------------------------------------------
+                */
 
-        $latestPayments = Payment::with([
-            'enrollment.student',
-            'paymentMethod',
-            'receiver',
-        ])
-        ->latest()
-        ->take(5)
-        ->get();
+                $paymentRate = $expectedRevenue > 0
+                    ? round(
+                        ($collectedRevenue / $expectedRevenue) * 100,
+                        2
+                    )
+                    : 0;
 
-        $latestExpenses = Expense::with([
-            'paymentMethod',
-            'recorder',
-        ])
-        ->latest()
-        ->take(5)
-        ->get();
+                                    /*
+                |--------------------------------------------------------------------------
+                | Dernières inscriptions
+                |--------------------------------------------------------------------------
+                */
 
-        $latestTransactions = CashTransaction::with([
-            'payment',
-            'expense',
-            'paymentMethod',
-            'recorder',
-        ])
-        ->latest()
-        ->take(5)
-        ->get();
+                $latestEnrollments = Enrollment::query()
+                    ->with([
+                        'student',
+                        'training',
+                    ])
+                    ->latest('id')
+                    ->limit(5)
+                    ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Retour
-        |--------------------------------------------------------------------------
-        */
+                /*
+                |--------------------------------------------------------------------------
+                | Derniers paiements
+                |--------------------------------------------------------------------------
+                */
 
-        return [
+                $latestPayments = Payment::query()
+                    ->with([
+                        'enrollment.student',
+                        'enrollment.training',
+                        'paymentMethod',
+                        'receiver',
+                    ])
+                    ->latest('payment_date')
+                    ->latest('id')
+                    ->limit(5)
+                    ->get();
 
-            'statistics' => [
+                /*
+                |--------------------------------------------------------------------------
+                | Dernières dépenses
+                |--------------------------------------------------------------------------
+                */
 
-                'students' => $students,
+                $latestExpenses = Expense::query()
+                    ->with([
+                        'paymentMethod',
+                        'recorder',
+                    ])
+                    ->latest('expense_date')
+                    ->latest('id')
+                    ->limit(5)
+                    ->get();
 
-                'trainings' => $trainings,
+                /*
+                |--------------------------------------------------------------------------
+                | Dernières opérations de caisse
+                |--------------------------------------------------------------------------
+                */
 
-                'enrollments' => $enrollments,
+                $latestTransactions = CashTransaction::query()
+                    ->with([
+                        'payment.enrollment.student',
+                        'payment.enrollment.training',
+                        'expense',
+                        'paymentMethod',
+                        'recorder',
+                    ])
+                    ->latest('transaction_date')
+                    ->latest('id')
+                    ->limit(5)
+                    ->get();
 
-                'pending_enrollments' => $pendingEnrollments,
+                /*
+                |--------------------------------------------------------------------------
+                | Retour des données
+                |--------------------------------------------------------------------------
+                */
 
-                'partial_enrollments' => $partialEnrollments,
+                return [
 
-                'paid_enrollments' => $paidEnrollments,
+                    'statistics' => [
 
-                'students_with_balance' => $studentsWithBalance,
+                        'students' => $students,
 
-            ],
+                        'trainings' => $trainings,
 
-            'finance' => [
+                        'enrollments' => $enrollments,
 
-                'expected_revenue' => $expectedRevenue,
+                        'pending_enrollments' => $pendingEnrollments,
 
-                'collected_revenue' => $collectedRevenue,
+                        'partial_enrollments' => $partialEnrollments,
 
-                'remaining_revenue' => $remainingRevenue,
+                        'paid_enrollments' => $paidEnrollments,
 
-                'payments_today' => $paymentsToday,
+                        'students_with_balance' => $studentsWithBalance,
 
-                'payments_month' => $paymentsMonth,
+                    ],
 
-                'expenses_month' => $expensesMonth,
+                                        'finance' => [
 
-                'cash_in' => $cashIn,
+                        'expected_revenue' => $expectedRevenue,
 
-                'cash_out' => $cashOut,
+                        'collected_revenue' => $collectedRevenue,
 
-                'cash_balance' => $cashBalance,
+                        'remaining_revenue' => $remainingRevenue,
 
-                'payment_rate' => $paymentRate,
+                        'payments_today' => $paymentsToday,
 
-            ],
+                        'payments_month' => $paymentsMonth,
 
-            'latest' => [
+                        'expenses_month' => $expensesMonth,
 
-                'enrollments' => $latestEnrollments,
+                        'cash_in' => $cashIn,
 
-                'payments' => $latestPayments,
+                        'cash_out' => $cashOut,
 
-                'expenses' => $latestExpenses,
+                        'cash_balance' => $cashBalance,
 
-                'transactions' => $latestTransactions,
+                        'payment_rate' => $paymentRate,
 
-            ],
+                    ],
 
-        ];
+                    'latest' => [
+
+                        'enrollments' => $latestEnrollments,
+
+                        'payments' => $latestPayments,
+
+                        'expenses' => $latestExpenses,
+
+                        'transactions' => $latestTransactions,
+
+                    ],
+
+                ];
+            }
+        );
+    }
+
+    /**
+     * Vide le cache du tableau de bord.
+     */
+    public static function clearCache(): void
+    {
+        Cache::forget('dashboard.index');
     }
 }

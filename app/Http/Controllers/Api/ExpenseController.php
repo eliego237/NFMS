@@ -47,18 +47,22 @@ class ExpenseController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        return response()->json(
+        return response()->json([
 
-            Expense::with([
+            'success' => true,
+
+            'message' => 'Liste des dépenses récupérée avec succès.',
+
+            'data' => Expense::with([
                 'paymentMethod',
                 'recorder',
                 'cashTransaction',
             ])
             ->latest('expense_date')
             ->latest('id')
-            ->get()
+            ->get(),
 
-        );
+        ]);
     }
 
     /**
@@ -71,6 +75,8 @@ class ExpenseController extends Controller implements HasMiddleware
         );
 
         return response()->json([
+
+            'success' => true,
 
             'message' => 'Dépense enregistrée avec succès.',
 
@@ -88,15 +94,19 @@ class ExpenseController extends Controller implements HasMiddleware
      */
     public function show(Expense $expense)
     {
-        return response()->json(
+        return response()->json([
 
-            $expense->load([
+            'success' => true,
+
+            'message' => 'Dépense récupérée avec succès.',
+
+            'data' => $expense->load([
                 'paymentMethod',
                 'recorder',
                 'cashTransaction',
-            ])
+            ]),
 
-        );
+        ]);
     }
 
     /**
@@ -110,6 +120,8 @@ class ExpenseController extends Controller implements HasMiddleware
         );
 
         return response()->json([
+
+            'success' => true,
 
             'message' => 'Dépense modifiée avec succès.',
 
@@ -130,6 +142,8 @@ class ExpenseController extends Controller implements HasMiddleware
         ExpenseService::delete($expense);
 
         return response()->json([
+
+            'success' => true,
 
             'message' => 'Dépense supprimée avec succès.'
 

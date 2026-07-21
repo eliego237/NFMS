@@ -39,6 +39,8 @@ class DashboardChartController extends Controller implements HasMiddleware
 
             'success' => true,
 
+            'message' => 'Statistiques des paiements récupérées avec succès.',
+
             'data' => DashboardChartService::monthlyPayments(),
 
         ]);
@@ -52,6 +54,8 @@ class DashboardChartController extends Controller implements HasMiddleware
         return response()->json([
 
             'success' => true,
+
+            'message' => 'Statistiques des dépenses récupérées avec succès.',
 
             'data' => DashboardChartService::monthlyExpenses(),
 
@@ -67,6 +71,8 @@ class DashboardChartController extends Controller implements HasMiddleware
 
             'success' => true,
 
+            'message' => 'Statistiques des inscriptions récupérées avec succès.',
+
             'data' => DashboardChartService::monthlyEnrollments(),
 
         ]);
@@ -81,19 +87,23 @@ class DashboardChartController extends Controller implements HasMiddleware
 
             'success' => true,
 
+            'message' => 'Répartition des moyens de paiement récupérée avec succès.',
+
             'data' => DashboardChartService::paymentMethods(),
 
         ]);
     }
 
     /**
-     * Top 5 des formations.
+     * Top des formations.
      */
     public function trainings()
     {
         return response()->json([
 
             'success' => true,
+
+            'message' => 'Classement des formations récupéré avec succès.',
 
             'data' => DashboardChartService::topTrainings(),
 

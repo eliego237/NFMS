@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogService;
 use App\Services\SettingService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -43,6 +44,8 @@ class SettingController extends Controller implements HasMiddleware
 
             'success' => true,
 
+            'message' => 'Paramètres récupérés avec succès.',
+
             'data' => SettingService::all(),
 
         ]);
@@ -53,7 +56,29 @@ class SettingController extends Controller implements HasMiddleware
      */
     public function update(Request $request)
     {
-        SettingService::update($request->all());
+        SettingService::update(
+
+            $request->all()
+
+        );
+
+        ActivityLogService::log(
+
+            module: 'settings',
+
+            event: 'updated',
+
+            subject: auth()->user(),
+
+            properties: [
+
+                'updated_by' => auth()->user()->name,
+
+                'settings' => array_keys($request->all()),
+
+            ]
+
+        );
 
         return response()->json([
 

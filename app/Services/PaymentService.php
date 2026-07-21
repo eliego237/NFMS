@@ -17,7 +17,13 @@ class PaymentService
     {
         return DB::transaction(function () use ($data) {
 
-            $enrollment = Enrollment::findOrFail(
+            /*
+            |--------------------------------------------------------------------------
+            | Verrouillage de l'inscription
+            |--------------------------------------------------------------------------
+            */
+
+            $enrollment = Enrollment::lockForUpdate()->findOrFail(
                 $data['enrollment_id']
             );
 
@@ -32,6 +38,15 @@ class PaymentService
                 abort(
                     422,
                     'Cette inscription est déjà entièrement payée.'
+                );
+
+            }
+
+            if ($data['amount'] <= 0) {
+
+                abort(
+                    422,
+                    'Le montant du paiement doit être supérieur à zéro.'
                 );
 
             }
@@ -56,13 +71,20 @@ class PaymentService
                 'REC'
             );
 
-            $nextNumber = (Payment::max('id') ?? 0) + 1;
+            $nextNumber = (
+                Payment::lockForUpdate()->max('id') ?? 0
+            ) + 1;
 
             $receiptNumber = sprintf(
+
                 '%s%s%06d',
+
                 $prefix,
+
                 now()->year,
+
                 $nextNumber
+
             );
 
             /*
@@ -73,21 +95,21 @@ class PaymentService
 
             $payment = Payment::create([
 
-                'enrollment_id'    => $enrollment->id,
+                'enrollment_id' => $enrollment->id,
 
-                'receipt_number'   => $receiptNumber,
+                'receipt_number' => $receiptNumber,
 
-                'amount'           => $data['amount'],
+                'amount' => $data['amount'],
 
-                'payment_method_id'=> $data['payment_method_id'],
+                'payment_method_id' => $data['payment_method_id'],
 
-                'payment_date'     => $data['payment_date'],
+                'payment_date' => $data['payment_date'],
 
-                'reference'        => $data['reference'] ?? null,
+                'reference' => $data['reference'] ?? null,
 
-                'notes'            => $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
 
-                'received_by'      => Auth::id(),
+                'received_by' => Auth::id(),
 
             ]);
 
@@ -97,31 +119,186 @@ class PaymentService
             |--------------------------------------------------------------------------
             */
 
-            $enrollment->amount_paid += $payment->amount;
+            $enrollment->increment(
+
+                'amount_paid',
+
+                $payment->amount
+
+            );
+
+            $enrollment->refresh();
 
             $enrollment->refreshBalance();
 
+            $enrollment->refresh();
+
             /*
             |--------------------------------------------------------------------------
-            | Journal de caisse
+            | Enregistrement dans la caisse
             |--------------------------------------------------------------------------
             */
 
-            CashTransactionService::recordPayment($payment);
+            CashTransactionService::recordPayment(
+                $payment
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Journal d'activité
+            |--------------------------------------------------------------------------
+            */
+
+            ActivityLogService::log(
+
+                module: 'payments',
+
+                event: 'created',
+
+                subject: $payment,
+
+                properties: [
+
+                    'recu' => $payment->receipt_number,
+
+                    'montant' => $payment->amount,
+
+                    'etudiant' => $enrollment->student->full_name,
+
+                    'formation' => $enrollment->training->title,
+
+                    'utilisateur' => Auth::user()?->name,
+
+                ]
+
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Retour
+            |--------------------------------------------------------------------------
+            */
 
             return [
 
-                'payment' => $payment->load([
+                'payment' => $payment->fresh()->load([
+
                     'paymentMethod',
+
                     'receiver',
+
                     'enrollment.student',
+
                     'enrollment.training',
+
+                    'cashTransaction',
+
                 ]),
 
-                'enrollment' => $enrollment->fresh(),
+                'enrollment' => $enrollment->fresh()->load([
+
+                    'student',
+
+                    'training',
+
+                    'payments',
+
+                ]),
 
             ];
 
         });
     }
+
+    /**
+ * Supprimer un paiement.
+ */
+public static function delete(Payment $payment): void
+{
+    DB::transaction(function () use ($payment) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Chargement des relations
+        |--------------------------------------------------------------------------
+        */
+
+        $payment->loadMissing([
+            'enrollment.student',
+            'enrollment.training',
+            'cashTransaction',
+        ]);
+
+        $enrollment = Enrollment::lockForUpdate()->findOrFail(
+            $payment->enrollment_id
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Suppression de la transaction de caisse
+        |--------------------------------------------------------------------------
+        */
+
+        if ($payment->cashTransaction) {
+
+            $payment->cashTransaction->delete();
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mise à jour de l'inscription
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->decrement(
+            'amount_paid',
+            $payment->amount
+        );
+
+        $enrollment->refresh();
+
+        $enrollment->refreshBalance();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Journal d'activité
+        |--------------------------------------------------------------------------
+        */
+
+        ActivityLogService::log(
+
+            module: 'payments',
+
+            event: 'deleted',
+
+            subject: $payment,
+
+            properties: [
+
+                'recu' => $payment->receipt_number,
+
+                'montant' => $payment->amount,
+
+                'etudiant' => $enrollment->student->full_name,
+
+                'formation' => $enrollment->training->title,
+
+                'utilisateur' => Auth::user()?->name,
+
+            ]
+
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Suppression du paiement
+        |--------------------------------------------------------------------------
+        */
+
+        $payment->delete();
+
+    });
+}
+
 }

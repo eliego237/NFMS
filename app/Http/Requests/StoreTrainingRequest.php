@@ -14,6 +14,28 @@ class StoreTrainingRequest extends FormRequest
         return true;
     }
 
+    public function messages(): array
+{
+    return [
+
+        'code.required' => 'Le code est obligatoire.',
+        'code.unique' => 'Le code est déjà utilisé.',
+
+        'title.required' => 'Le titre est obligatoire.',
+
+        'category.required' => 'La catégorie est obligatoire.',
+
+        'price.required' => 'Le prix est obligatoire.',
+        'price.numeric' => 'Le prix doit être un nombre.',
+
+        'duration_months.required' => 'La durée est obligatoire.',
+        'duration_months.integer' => 'La durée doit être un entier.',
+
+        'certificate.required' => 'Le certificat est obligatoire.',
+
+    ];
+}
+
     /**
      * Get the validation rules that apply to the request.
      */

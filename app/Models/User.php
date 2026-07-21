@@ -12,7 +12,17 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable([
+    'name',
+    'first_name',
+    'last_name',
+    'email',
+    'phone',
+    'photo',
+    'status',
+    'last_login_at',
+    'password',
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -23,10 +33,12 @@ class User extends Authenticatable
     use LogsActivity;
 
     protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'last_login_at'     => 'datetime',
+        'status'            => 'boolean',
+        'password'          => 'hashed',
+    ];
+}
 }

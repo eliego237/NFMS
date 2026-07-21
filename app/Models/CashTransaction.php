@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 class CashTransaction extends Model
 {
@@ -13,9 +14,9 @@ class CashTransaction extends Model
     /**
      * Types de transaction.
      */
-    public const TYPE_INCOME = 'income';
+    public const TYPE_INCOME = 'Entrée';
 
-    public const TYPE_EXPENSE = 'expense';
+    public const TYPE_EXPENSE = 'Sortie';
 
     /**
      * Les attributs pouvant être remplis.
@@ -62,6 +63,16 @@ class CashTransaction extends Model
     | Relations
     |--------------------------------------------------------------------------
     */
+    
+    public function scopeIncome(Builder $query): Builder
+{
+    return $query->where('type', 'Entrée');
+}
+
+public function scopeExpense(Builder $query): Builder
+{
+    return $query->where('type', 'Sortie');
+}
 
     /**
      * Paiement à l'origine de la transaction.
@@ -92,7 +103,10 @@ class CashTransaction extends Model
      */
     public function recorder(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'recorded_by');
+        return $this->belongsTo(
+            User::class,
+            'recorded_by'
+        );
     }
 
     /*
@@ -104,17 +118,23 @@ class CashTransaction extends Model
     /**
      * Transactions d'entrée.
      */
-    public function scopeIncome($query)
+    public function scopeOnlyIncome($query)
     {
-        return $query->where('type', self::TYPE_INCOME);
+        return $query->where(
+            'type',
+            self::TYPE_INCOME
+        );
     }
 
     /**
      * Transactions de sortie.
      */
-    public function scopeExpense($query)
+    public function scopeOnlyExpenses($query)
     {
-        return $query->where('type', self::TYPE_EXPENSE);
+        return $query->where(
+            'type',
+            self::TYPE_EXPENSE
+        );
     }
 
     /*
@@ -167,10 +187,15 @@ class CashTransaction extends Model
     public function getFormattedAmountAttribute(): string
     {
         return number_format(
+
             $this->amount,
+
             0,
+
             ',',
+
             ' '
+
         ) . ' FCFA';
     }
 }

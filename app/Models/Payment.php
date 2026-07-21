@@ -2,48 +2,29 @@
 
 namespace App\Models;
 
-use LogsActivity;
-use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Payment extends Model
 {
     use SoftDeletes;
 
-    /**
-     * Les attributs pouvant être remplis.
-     */
     protected $fillable = [
-
         'enrollment_id',
-
         'receipt_number',
-
         'amount',
-
         'payment_method_id',
-
         'payment_date',
-
         'reference',
-
         'notes',
-
         'received_by',
-
     ];
 
-    /**
-     * Conversion automatique des types.
-     */
     protected $casts = [
-
         'amount' => 'decimal:2',
-
         'payment_date' => 'date',
-
     ];
 
     /**
@@ -84,5 +65,16 @@ class Payment extends Model
     public function training(): BelongsTo
     {
         return $this->enrollment->training();
+    }
+
+    /**
+     * Transaction de caisse liée au paiement.
+     */
+    public function cashTransaction(): HasOne
+    {
+        return $this->hasOne(
+            CashTransaction::class,
+            'payment_id'
+        );
     }
 }

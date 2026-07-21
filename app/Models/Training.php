@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use LogsActivity;
-use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -46,6 +44,12 @@ class Training extends Model
 
         'is_active' => 'boolean',
 
+        'created_at' => 'datetime',
+
+        'updated_at' => 'datetime',
+
+        'deleted_at' => 'datetime',
+
     ];
 
     /**
@@ -53,7 +57,9 @@ class Training extends Model
      */
     public function enrollments(): HasMany
     {
-        return $this->hasMany(Enrollment::class);
+        return $this->hasMany(
+            Enrollment::class
+        );
     }
 
     /**
@@ -61,8 +67,11 @@ class Training extends Model
      */
     public function modules(): HasMany
     {
-        return $this->hasMany(TrainingModule::class)
-            ->orderBy('position');
+        return $this->hasMany(
+            TrainingModule::class
+        )->orderBy(
+            'position'
+        );
     }
 
     /**
@@ -78,7 +87,9 @@ class Training extends Model
      */
     public function getTotalHoursAttribute(): int
     {
-        return (int) $this->modules()->sum('duration_hours');
+        return (int) $this->modules()->sum(
+            'duration_hours'
+        );
     }
 
     /**
@@ -95,7 +106,13 @@ class Training extends Model
     public function getActiveEnrollmentsCountAttribute(): int
     {
         return $this->enrollments()
-            ->whereIn('status', ['pending', 'partial'])
+            ->whereIn(
+                'status',
+                [
+                    'pending',
+                    'partial',
+                ]
+            )
             ->count();
     }
 
@@ -105,6 +122,19 @@ class Training extends Model
     public function getRevenueAttribute(): float
     {
         return (float) $this->enrollments()
-            ->sum('amount_paid');
+            ->sum(
+                'amount_paid'
+            );
+    }
+
+    /**
+     * Scope des formations actives.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where(
+            'is_active',
+            true
+        );
     }
 }
