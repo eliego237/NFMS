@@ -48,11 +48,99 @@ Route::get(
 
 /*
 |--------------------------------------------------------------------------
+| Dashboard (Temporairement public)
+|--------------------------------------------------------------------------
+|
+| Cette route est publique uniquement pendant le développement
+| du frontend React.
+| Elle sera replacée dans auth:sanctum une fois
+| l'authentification terminée.
+|
+*/
+
+Route::get(
+    '/dashboard',
+    [DashboardController::class, 'index']
+);
+
+/*
+|--------------------------------------------------------------------------
+| Dashboard Charts (Temporairement publics)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('dashboard/charts')->group(function () {
+
+    Route::get('/payments', [DashboardChartController::class, 'payments']);
+
+    Route::get('/expenses', [DashboardChartController::class, 'expenses']);
+
+    Route::get('/enrollments', [DashboardChartController::class, 'enrollments']);
+
+    Route::get('/payment-methods', [DashboardChartController::class, 'paymentMethods']);
+
+    Route::get('/trainings', [DashboardChartController::class, 'trainings']);
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Students (Temporairement publics)
+|--------------------------------------------------------------------------
+|
+| Cette route est publique uniquement pendant le développement
+| du frontend React.
+| Elle sera replacée dans auth:sanctum une fois
+| l'authentification terminée.
+|
+*/
+
+Route::apiResource('students', StudentController::class);
+
+
+/*
+|--------------------------------------------------------------------------
+| Payments (Temporairement publics)
+|--------------------------------------------------------------------------
+|
+| Cette route est publique uniquement pendant le développement
+| du frontend React.
+| Elle sera replacée dans auth:sanctum une fois
+| l'authentification terminée.
+|
+*/
+
+Route::apiResource('payments', PaymentController::class);
+/*
+|--------------------------------------------------------------------------
 | Routes protégées
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth:sanctum')->group(function () {
+
+/*
+|--------------------------------------------------------------------------
+| Enrollments (Temporairement publics)
+|--------------------------------------------------------------------------
+*/
+
+Route::apiResource('enrollments', EnrollmentController::class);
+
+/*
+|--------------------------------------------------------------------------
+| Payment Methods (Temporairement publiques)
+|--------------------------------------------------------------------------
+*/
+
+Route::apiResource('payment-methods', PaymentMethodController::class);
+
+/*
+|--------------------------------------------------------------------------
+| Payments (Temporairement publics)
+|--------------------------------------------------------------------------
+*/
+
 
     /*
     |--------------------------------------------------------------------------
@@ -104,53 +192,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Dashboard
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('dashboard')->group(function () {
-
-        Route::get('/', [DashboardController::class, 'index']);
-
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Dashboard Charts
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('dashboard/charts')->group(function () {
-
-        Route::get('/payments', [DashboardChartController::class, 'payments']);
-
-        Route::get('/expenses', [DashboardChartController::class, 'expenses']);
-
-        Route::get('/enrollments', [DashboardChartController::class, 'enrollments']);
-
-        Route::get('/payment-methods', [DashboardChartController::class, 'paymentMethods']);
-
-        Route::get('/trainings', [DashboardChartController::class, 'trainings']);
-
-    });
-
-    /*
-    |--------------------------------------------------------------------------
     | Ressources principales
     |--------------------------------------------------------------------------
     */
 
-    Route::apiResource('students', StudentController::class);
-
     Route::apiResource('trainings', TrainingController::class);
 
     Route::apiResource('training-modules', TrainingModuleController::class);
-
-    Route::apiResource('enrollments', EnrollmentController::class);
-
-    Route::apiResource('payments', PaymentController::class);
-
-    Route::apiResource('payment-methods', PaymentMethodController::class);
 
     Route::apiResource('expenses', ExpenseController::class);
 
@@ -158,12 +206,6 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     | Caisse
     |--------------------------------------------------------------------------
-    |
-    | IMPORTANT :
-    | Les routes spécifiques doivent être déclarées AVANT apiResource,
-    | sinon Laravel interprète "summary", "income" et "expenses"
-    | comme {cash_transaction}.
-    |
     */
 
     Route::prefix('cash-transactions')->group(function () {

@@ -27,14 +27,15 @@ class ActivityLogService
 
         ];
 
-        activity($module)
+        $activity = activity($module);
 
-            ->causedBy(auth()->user())
+        if (auth()->check()) {
+            $activity->causedBy(auth()->user());
+        }
 
+        $activity
             ->performedOn($subject)
-
             ->event($event)
-
             ->withProperties(array_merge([
 
                 'ip' => request()->ip(),
@@ -46,7 +47,6 @@ class ActivityLogService
                 'browser' => request()->userAgent(),
 
             ], $properties))
-
             ->log($descriptions[$event] ?? ucfirst($event));
     }
 }

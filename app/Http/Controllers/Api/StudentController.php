@@ -15,42 +15,11 @@ class StudentController extends Controller implements HasMiddleware
     /**
      * Middlewares du contrôleur.
      */
-    public static function middleware(): array
-    {
-        return [
-
-            new Middleware(
-                'permission:students.view',
-                only: [
-                    'index',
-                    'show',
-                ]
-            ),
-
-            new Middleware(
-                'permission:students.create',
-                only: [
-                    'store',
-                ]
-            ),
-
-            new Middleware(
-                'permission:students.update',
-                only: [
-                    'update',
-                ]
-            ),
-
-            new Middleware(
-                'permission:students.delete',
-                only: [
-                    'destroy',
-                ]
-            ),
-
-        ];
-    }
-
+   public static function middleware(): array
+{
+    // Temporairement désactivé pendant le développement React
+    return [];
+}
     /**
      * Liste des étudiants.
      */

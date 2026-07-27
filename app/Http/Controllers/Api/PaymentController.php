@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
+use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\PaymentService;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -13,62 +14,40 @@ use Illuminate\Routing\Controllers\Middleware;
 class PaymentController extends Controller implements HasMiddleware
 {
     /**
-     * Middlewares du contrôleur.
+     * Middlewares
      */
     public static function middleware(): array
-    {
-        return [
-
-            new Middleware(
-                'permission:payments.view',
-                only: ['index', 'show']
-            ),
-
-            new Middleware(
-                'permission:payments.create',
-                only: ['store']
-            ),
-
-            new Middleware(
-                'permission:payments.update',
-                only: ['update']
-            ),
-
-            new Middleware(
-                'permission:payments.delete',
-                only: ['destroy']
-            ),
-
-        ];
-    }
+{
+    return [];
+}
 
     /**
-     * Liste des paiements.
+     * Liste des paiements
      */
     public function index()
     {
+        $payments = Payment::with([
+            'enrollment.student',
+            'enrollment.training',
+            'paymentMethod',
+            'receiver',
+        ])
+        ->latest()
+        ->get();
+
         return response()->json([
 
             'success' => true,
 
             'message' => 'Liste des paiements récupérée avec succès.',
 
-            'data' => Payment::with([
-
-                'enrollment.student',
-                'enrollment.training',
-                'paymentMethod',
-                'receiver',
-
-            ])
-            ->latest()
-            ->get(),
+            'data' => PaymentResource::collection($payments),
 
         ]);
     }
 
     /**
-     * Enregistrer un paiement.
+     * Enregistrer un paiement
      */
     public function store(StorePaymentRequest $request)
     {
@@ -84,29 +63,45 @@ class PaymentController extends Controller implements HasMiddleware
 
             'data' => [
 
-                'payment' => $result['payment'],
+                'payment' => new PaymentResource(
+                    $result['payment']->load([
+                        'paymentMethod',
+                        'receiver',
+                        'enrollment.student',
+                        'enrollment.training',
+                    ])
+                ),
 
                 'enrollment' => [
 
                     'id' => $result['enrollment']->id,
 
-                    'enrollment_number' => $result['enrollment']->enrollment_number,
+                    'enrollment_number' =>
+                        $result['enrollment']->enrollment_number,
 
-                    'registration_fee' => $result['enrollment']->registration_fee,
+                    'registration_fee' =>
+                        $result['enrollment']->registration_fee,
 
-                    'training_fee' => $result['enrollment']->training_fee,
+                    'training_fee' =>
+                        $result['enrollment']->training_fee,
 
-                    'discount' => $result['enrollment']->discount,
+                    'discount' =>
+                        $result['enrollment']->discount,
 
-                    'total_amount' => $result['enrollment']->total_amount,
+                    'total_amount' =>
+                        $result['enrollment']->total_amount,
 
-                    'amount_paid' => $result['enrollment']->amount_paid,
+                    'amount_paid' =>
+                        $result['enrollment']->amount_paid,
 
-                    'balance' => $result['enrollment']->balance,
+                    'balance' =>
+                        $result['enrollment']->balance,
 
-                    'payment_progress' => $result['enrollment']->payment_progress,
+                    'payment_progress' =>
+                        $result['enrollment']->payment_progress,
 
-                    'formatted_status' => $result['enrollment']->formatted_status,
+                    'formatted_status' =>
+                        $result['enrollment']->formatted_status,
 
                 ],
 
@@ -116,33 +111,35 @@ class PaymentController extends Controller implements HasMiddleware
     }
 
     /**
-     * Afficher un paiement.
+     * Détails d'un paiement
      */
     public function show(Payment $payment)
     {
+        $payment->load([
+
+            'paymentMethod',
+
+            'receiver',
+
+            'enrollment.student',
+
+            'enrollment.training',
+
+        ]);
+
         return response()->json([
 
             'success' => true,
 
             'message' => 'Paiement récupéré avec succès.',
 
-            'data' => $payment->load([
-
-                'paymentMethod',
-
-                'receiver',
-
-                'enrollment.student',
-
-                'enrollment.training',
-
-            ]),
+            'data' => new PaymentResource($payment),
 
         ]);
     }
 
     /**
-     * Les paiements ne sont pas modifiables.
+     * Les paiements ne sont pas modifiables
      */
     public function update(
         UpdatePaymentRequest $request,
@@ -159,7 +156,7 @@ class PaymentController extends Controller implements HasMiddleware
     }
 
     /**
-     * Supprimer un paiement.
+     * Supprimer un paiement
      */
     public function destroy(Payment $payment)
     {

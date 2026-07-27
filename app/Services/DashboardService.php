@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Training;
 use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 
 class DashboardService
 {
@@ -215,7 +216,36 @@ class DashboardService
                 | Retour des données
                 |--------------------------------------------------------------------------
                 */
+                
+                 /*
+|--------------------------------------------------------------------------
+| Evolution des paiements par mois
+|--------------------------------------------------------------------------
+*/
 
+$paymentsChart = [];
+
+for ($month = 1; $month <= 12; $month++) {
+
+    $paymentsChart[] = [
+
+        'month' => Carbon::create()
+            ->month($month)
+            ->translatedFormat('M'),
+
+        'amount' => Payment::whereYear(
+                'payment_date',
+                $currentYear
+            )
+            ->whereMonth(
+                'payment_date',
+                $month
+            )
+            ->sum('amount'),
+
+    ];
+
+}
                 return [
 
                     'statistics' => [
@@ -255,22 +285,24 @@ class DashboardService
                         'cash_out' => $cashOut,
 
                         'cash_balance' => $cashBalance,
-
+                        
                         'payment_rate' => $paymentRate,
 
                     ],
 
+                     'payments_chart' => $paymentsChart,
+
                     'latest' => [
 
-                        'enrollments' => $latestEnrollments,
+    'enrollments' => $latestEnrollments->toArray(),
 
-                        'payments' => $latestPayments,
+    'payments' => $latestPayments->toArray(),
 
-                        'expenses' => $latestExpenses,
+    'expenses' => $latestExpenses->toArray(),
 
-                        'transactions' => $latestTransactions,
+    'transactions' => $latestTransactions->toArray(),
 
-                    ],
+],
 
                 ];
             }

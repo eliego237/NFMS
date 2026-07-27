@@ -91,9 +91,11 @@ class UpdateStudentRequest extends FormRequest
             */
 
             'photo' => [
-                'nullable',
-                'string',
-            ],
+    'nullable',
+    'image',
+    'mimes:jpg,jpeg,png,webp',
+    'max:2048',
+],
 
             /*
             |--------------------------------------------------------------------------
