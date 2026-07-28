@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
 /*
 |--------------------------------------------------------------------------
 | API Controllers
@@ -25,6 +23,15 @@ use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\TrainingModuleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UtilityController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/test-token', function (Request $request) {
+    return response()->json([
+        'authorization' => $request->header('Authorization'),
+        'bearerToken' => $request->bearerToken(),
+    ]);
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -110,7 +117,6 @@ Route::apiResource('students', StudentController::class);
 |
 */
 
-Route::apiResource('payments', PaymentController::class);
 /*
 |--------------------------------------------------------------------------
 | Routes protégées
@@ -126,6 +132,8 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 
 Route::apiResource('enrollments', EnrollmentController::class);
+
+Route::apiResource('payments', PaymentController::class);
 
 /*
 |--------------------------------------------------------------------------

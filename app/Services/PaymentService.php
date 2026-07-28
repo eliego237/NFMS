@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
@@ -61,58 +62,83 @@ class PaymentService
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | Génération du numéro de reçu
-            |--------------------------------------------------------------------------
-            */
+|--------------------------------------------------------------------------
+| Génération du numéro de reçu
+|--------------------------------------------------------------------------
+*/
 
-            $prefix = Setting::getValue(
-                'receipt_prefix',
-                'REC'
-            );
+$prefix = Setting::getValue(
+    'receipt_prefix',
+    'REC'
+);
 
-            $nextNumber = (
-                Payment::lockForUpdate()->max('id') ?? 0
-            ) + 1;
+$nextNumber = (
+    Payment::withTrashed()
+        ->lockForUpdate()
+        ->max('id') ?? 0
+);
 
-            $receiptNumber = sprintf(
+do {
 
-                '%s%s%06d',
+    $nextNumber++;
 
-                $prefix,
+    $receiptNumber = sprintf(
 
-                now()->year,
+        '%s%s%06d',
 
-                $nextNumber
+        $prefix,
 
-            );
+        now()->year,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Création du paiement
-            |--------------------------------------------------------------------------
-            */
+        $nextNumber
 
-            $payment = Payment::create([
+    );
 
-                'enrollment_id' => $enrollment->id,
+} while (
 
-                'receipt_number' => $receiptNumber,
+    Payment::withTrashed()
+        ->where('receipt_number', $receiptNumber)
+        ->exists()
 
-                'amount' => $data['amount'],
+);
 
-                'payment_method_id' => $data['payment_method_id'],
+/*
+|--------------------------------------------------------------------------
+| Debug Auth
+|--------------------------------------------------------------------------
+*/
 
-                'payment_date' => $data['payment_date'],
+Log::info('AUTH DEBUG', [
+    'check' => Auth::check(),
+    'id' => Auth::id(),
+    'user' => Auth::user(),
+]);
 
-                'reference' => $data['reference'] ?? null,
+/*
+|--------------------------------------------------------------------------
+| Création du paiement
+|--------------------------------------------------------------------------
+*/
 
-                'notes' => $data['notes'] ?? null,
+$payment = Payment::create([
 
-                'received_by' => Auth::id(),
+    'enrollment_id'     => $enrollment->id,
 
-            ]);
+    'receipt_number'    => $receiptNumber,
 
+    'amount'            => $data['amount'],
+
+    'payment_method_id' => $data['payment_method_id'],
+
+    'payment_date'      => $data['payment_date'],
+
+    'reference'         => $data['reference'] ?? null,
+
+    'notes'             => $data['notes'] ?? null,
+
+    'received_by'       => Auth::id(),
+
+]);
             /*
             |--------------------------------------------------------------------------
             | Mise à jour de l'inscription

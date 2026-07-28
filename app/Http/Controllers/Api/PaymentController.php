@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
@@ -17,9 +18,9 @@ class PaymentController extends Controller implements HasMiddleware
      * Middlewares
      */
     public static function middleware(): array
-{
-    return [];
-}
+    {
+        return [];
+    }
 
     /**
      * Liste des paiements
@@ -50,65 +51,33 @@ class PaymentController extends Controller implements HasMiddleware
      * Enregistrer un paiement
      */
     public function store(StorePaymentRequest $request)
-    {
+{
+    \Log::info('PAYMENT STORE EXECUTED');
+
+    try {
+
         $result = PaymentService::store(
             $request->validated()
         );
 
         return response()->json([
-
             'success' => true,
-
             'message' => 'Paiement enregistré avec succès.',
-
-            'data' => [
-
-                'payment' => new PaymentResource(
-                    $result['payment']->load([
-                        'paymentMethod',
-                        'receiver',
-                        'enrollment.student',
-                        'enrollment.training',
-                    ])
-                ),
-
-                'enrollment' => [
-
-                    'id' => $result['enrollment']->id,
-
-                    'enrollment_number' =>
-                        $result['enrollment']->enrollment_number,
-
-                    'registration_fee' =>
-                        $result['enrollment']->registration_fee,
-
-                    'training_fee' =>
-                        $result['enrollment']->training_fee,
-
-                    'discount' =>
-                        $result['enrollment']->discount,
-
-                    'total_amount' =>
-                        $result['enrollment']->total_amount,
-
-                    'amount_paid' =>
-                        $result['enrollment']->amount_paid,
-
-                    'balance' =>
-                        $result['enrollment']->balance,
-
-                    'payment_progress' =>
-                        $result['enrollment']->payment_progress,
-
-                    'formatted_status' =>
-                        $result['enrollment']->formatted_status,
-
-                ],
-
-            ],
-
+            'data' => $result,
         ], 201);
+
+    } catch (\Throwable $e) {
+
+        \Log::error('PAYMENT ERROR', [
+            'message' => $e->getMessage(),
+            'file'    => $e->getFile(),
+            'line'    => $e->getLine(),
+            'trace'   => $e->getTraceAsString(),
+        ]);
+
+        throw $e;
     }
+}
 
     /**
      * Détails d'un paiement
@@ -124,6 +93,10 @@ class PaymentController extends Controller implements HasMiddleware
             'enrollment.student',
 
             'enrollment.training',
+
+            'enrollment.payments.paymentMethod',
+
+            'enrollment.payments.receiver',
 
         ]);
 

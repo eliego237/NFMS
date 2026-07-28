@@ -78,76 +78,122 @@ class PaymentResource extends JsonResource
             */
 
             'enrollment' => $this->whenLoaded(
-                'enrollment',
-                fn () => [
+    'enrollment',
+    fn () => [
 
-                    'id' => $this->enrollment->id,
+        'id' => $this->enrollment->id,
 
-                    'enrollment_number' => $this->enrollment->enrollment_number,
+        'enrollment_number' => $this->enrollment->enrollment_number,
 
-                    'academic_year' => $this->enrollment->academic_year,
+        'academic_year' => $this->enrollment->academic_year,
 
-                    'registration_fee' => (float) $this->enrollment->registration_fee,
+        'registration_fee' => (float) $this->enrollment->registration_fee,
 
-                    'training_fee' => (float) $this->enrollment->training_fee,
+        'training_fee' => (float) $this->enrollment->training_fee,
 
-                    'discount' => (float) $this->enrollment->discount,
+        'discount' => (float) $this->enrollment->discount,
 
-                    'total_amount' => (float) $this->enrollment->total_amount,
+        'total_amount' => (float) $this->enrollment->total_amount,
 
-                    'amount_paid' => (float) $this->enrollment->amount_paid,
+        'amount_paid' => (float) $this->enrollment->amount_paid,
 
-                    'balance' => (float) $this->enrollment->balance,
+        'balance' => (float) $this->enrollment->balance,
 
-                    'payment_progress' => $this->enrollment->payment_progress,
+        'payment_progress' => $this->enrollment->payment_progress,
 
-                    'formatted_status' => $this->enrollment->formatted_status,
+        'formatted_status' => $this->enrollment->formatted_status,
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Étudiant
-                    |--------------------------------------------------------------------------
-                    */
+        /*
+        |--------------------------------------------------------------------------
+        | Étudiant
+        |--------------------------------------------------------------------------
+        */
 
-                    'student' => $this->enrollment->relationLoaded('student')
-                        ? [
+        'student' => $this->enrollment->relationLoaded('student')
+            ? [
 
-                            'id' => $this->enrollment->student->id,
+                'id' => $this->enrollment->student->id,
 
-                            'matricule' => $this->enrollment->student->matricule,
+                'matricule' => $this->enrollment->student->matricule,
 
-                            'first_name' => $this->enrollment->student->first_name,
+                'first_name' => $this->enrollment->student->first_name,
 
-                            'last_name' => $this->enrollment->student->last_name,
+                'last_name' => $this->enrollment->student->last_name,
 
-                            'full_name' => $this->enrollment->student->first_name . ' ' .
-                                $this->enrollment->student->last_name,
+                'full_name' => $this->enrollment->student->first_name . ' ' .
+                    $this->enrollment->student->last_name,
 
-                        ]
-                        : null,
+                'phone' => $this->enrollment->student->phone,
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Formation
-                    |--------------------------------------------------------------------------
-                    */
+                'email' => $this->enrollment->student->email,
 
-                    'training' => $this->enrollment->relationLoaded('training')
-                        ? [
+            ]
+            : null,
 
-                            'id' => $this->enrollment->training->id,
+        /*
+        |--------------------------------------------------------------------------
+        | Formation
+        |--------------------------------------------------------------------------
+        */
 
-                            'code' => $this->enrollment->training->code,
+        'training' => $this->enrollment->relationLoaded('training')
+            ? [
 
-                            'title' => $this->enrollment->training->title,
+                'id' => $this->enrollment->training->id,
 
-                            'category' => $this->enrollment->training->category,
+                'code' => $this->enrollment->training->code,
 
-                        ]
-                        : null,
+                'title' => $this->enrollment->training->title,
 
-                ]
-            ),
+                'category' => $this->enrollment->training->category,
+
+            ]
+            : null,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Historique des paiements
+        |--------------------------------------------------------------------------
+        */
+
+        'payments' => $this->enrollment->relationLoaded('payments')
+
+            ? $this->enrollment->payments
+                ->sortByDesc('payment_date')
+                ->values()
+                ->map(function ($payment) {
+
+                    return [
+
+                        'id' => $payment->id,
+
+                        'receipt_number' => $payment->receipt_number,
+
+                        'payment_date' => optional(
+                            $payment->payment_date
+                        )?->format('d/m/Y'),
+
+                        'amount' => (float) $payment->amount,
+
+                        'formatted_amount' => number_format(
+                            $payment->amount,
+                            0,
+                            ',',
+                            ' '
+                        ) . ' FCFA',
+
+                        'payment_method' => $payment->paymentMethod?->name,
+
+                        'receiver' => $payment->receiver?->name,
+
+                    ];
+
+                })
+
+            : [],
+
+    ]
+),
 
         ];
     }
