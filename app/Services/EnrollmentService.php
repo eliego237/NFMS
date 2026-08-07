@@ -10,150 +10,174 @@ use Illuminate\Support\Facades\DB;
 
 class EnrollmentService
 {
-    /**
-     * Créer une inscription.
-     */
-    public static function store(array $data): Enrollment
-    {
-        return DB::transaction(function () use ($data) {
+/**
+ * Créer une inscription.
+ */
+public static function store(array $data): Enrollment
+{
+    return DB::transaction(function () use ($data) {
 
-            $training = Training::findOrFail(
-                $data['training_id']
+        $training = Training::findOrFail(
+            $data['training_id']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vérifier que l'étudiant n'est pas déjà inscrit à cette formation
+        |--------------------------------------------------------------------------
+        */
+
+        $exists = Enrollment::where('student_id', $data['student_id'])
+            ->where('training_id', $training->id)
+            ->exists();
+
+        if ($exists) {
+
+            abort(
+                422,
+                'Cet étudiant est déjà inscrit à cette formation.'
             );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Paramètres système
-            |--------------------------------------------------------------------------
-            */
+        }
 
-            $registrationFee = (float) Setting::getValue(
-                'registration_fee',
-                16500
+        /*
+        |--------------------------------------------------------------------------
+        | Paramètres système
+        |--------------------------------------------------------------------------
+        */
+
+        $registrationFee = (float) Setting::getValue(
+            'registration_fee',
+            16500
+        );
+
+        $prefix = Setting::getValue(
+            'enrollment_prefix',
+            'INS'
+        );
+
+        $academicYear = $data['academic_year']
+            ?? Setting::getValue(
+                'academic_year',
+                date('Y') . '-' . (date('Y') + 1)
             );
 
-            $prefix = Setting::getValue(
-                'enrollment_prefix',
-                'INS'
+        /*
+        |--------------------------------------------------------------------------
+        | Calcul des montants
+        |--------------------------------------------------------------------------
+        */
+
+        $trainingFee = $training->price;
+
+        $discount = (float) ($data['discount'] ?? 0);
+
+        $grossAmount = $registrationFee + $trainingFee;
+
+        if ($discount > $grossAmount) {
+
+            abort(
+                422,
+                'La remise ne peut pas être supérieure au montant total.'
             );
 
-            $academicYear = $data['academic_year']
-                ?? Setting::getValue(
-                    'academic_year',
-                    date('Y') . '-' . (date('Y') + 1)
-                );
+        }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Calcul des montants
-            |--------------------------------------------------------------------------
-            */
+        $totalAmount = $grossAmount - $discount;
 
-            $trainingFee = $training->price;
+        /*
+        |--------------------------------------------------------------------------
+        | Génération du numéro d'inscription
+        |--------------------------------------------------------------------------
+        */
 
-            $discount = (float) ($data['discount'] ?? 0);
+        $nextNumber = (Enrollment::withTrashed()->max('id') ?? 0) + 1;
 
-            $grossAmount = $registrationFee + $trainingFee;
+        $enrollmentNumber = sprintf(
+            '%s%s%05d',
+            $prefix,
+            now()->year,
+            $nextNumber
+        );
 
-            if ($discount > $grossAmount) {
+        /*
+        |--------------------------------------------------------------------------
+        | Création
+        |--------------------------------------------------------------------------
+        */
 
-                abort(
-                    422,
-                    'La remise ne peut pas être supérieure au montant total.'
-                );
+        $enrollment = Enrollment::create([
 
-            }
+            'enrollment_number' => $enrollmentNumber,
 
-            $totalAmount = $grossAmount - $discount;
+            'student_id' => $data['student_id'],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Numéro d'inscription
-            |--------------------------------------------------------------------------
-            */
+            'training_id' => $training->id,
 
-            $nextNumber = (Enrollment::max('id') ?? 0) + 1;
+            'registration_fee' => $registrationFee,
 
-            $enrollmentNumber = sprintf(
-                '%s%s%05d',
-                $prefix,
-                now()->year,
-                $nextNumber
-            );
+            'training_fee' => $trainingFee,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Création
-            |--------------------------------------------------------------------------
-            */
+            'discount' => $discount,
 
-            $enrollment = Enrollment::create([
+            'total_amount' => $totalAmount,
 
-                'enrollment_number' => $enrollmentNumber,
+            'amount_paid' => 0,
 
-                'student_id' => $data['student_id'],
+            'balance' => $totalAmount,
 
-                'training_id' => $training->id,
+            'status' => Enrollment::STATUS_PENDING,
 
-                'registration_fee' => $registrationFee,
+            'academic_year' => $academicYear,
 
-                'training_fee' => $trainingFee,
+            'enrolled_at' => $data['enrolled_at'],
 
-                'discount' => $discount,
+            'created_by' => Auth::id(),
 
-                'total_amount' => $totalAmount,
+            'notes' => $data['notes'] ?? null,
 
-                'amount_paid' => 0,
+        ]);
 
-                'balance' => $totalAmount,
+        /*
+        |--------------------------------------------------------------------------
+        | Journal d'activité
+        |--------------------------------------------------------------------------
+        */
 
-                'status' => 'pending',
+        ActivityLogService::log(
 
-                'academic_year' => $academicYear,
+            module: 'enrollments',
 
-                'enrolled_at' => $data['enrolled_at'],
+            event: 'created',
 
-                'created_by' => Auth::id(),
+            subject: $enrollment,
 
-                'notes' => $data['notes'] ?? null,
+            properties: [
 
+                'numero_inscription' => $enrollment->enrollment_number,
+
+                'etudiant' => $enrollment->student->full_name,
+
+                'formation' => $training->title,
+
+                'annee_academique' => $academicYear,
+
+                'montant_total' => $totalAmount,
+
+            ]
+
+        );
+
+        return $enrollment
+            ->fresh()
+            ->load([
+                'student',
+                'training',
+                'creator',
             ]);
 
-            ActivityLogService::log(
-
-                module: 'enrollments',
-
-                event: 'created',
-
-                subject: $enrollment,
-
-                properties: [
-
-                    'numero_inscription' => $enrollment->enrollment_number,
-
-                    'etudiant' => $enrollment->student->full_name,
-
-                    'formation' => $training->title,
-
-                    'annee_academique' => $academicYear,
-
-                    'montant_total' => $totalAmount,
-
-                ]
-
-            );
-
-            return $enrollment
-                ->fresh()
-                ->load([
-                    'student',
-                    'training',
-                    'creator',
-                ]);
-
-        });
-    }
-
+    });
+}
     /**
      * Modifier une inscription.
      */
@@ -252,38 +276,72 @@ class EnrollmentService
 
     }
 
-    /**
-     * Supprimer une inscription.
-     */
-    public static function delete(
-        Enrollment $enrollment
-    ): void {
+/**
+ * Supprimer une inscription.
+ *
+ * Une inscription ayant au moins un paiement
+ * ne peut pas être supprimée.
+ */
+public static function delete(
+    Enrollment $enrollment
+): void {
 
-        DB::transaction(function () use ($enrollment) {
+    DB::transaction(function () use ($enrollment) {
 
-            ActivityLogService::log(
+        /*
+        |--------------------------------------------------------------------------
+        | Règle métier : une inscription avec paiement est protégée
+        |--------------------------------------------------------------------------
+        */
 
-                module: 'enrollments',
+        if ($enrollment->payments()->exists()) {
 
-                event: 'deleted',
-
-                subject: $enrollment,
-
-                properties: [
-
-                    'numero_inscription' => $enrollment->enrollment_number,
-
-                    'etudiant' => $enrollment->student->full_name,
-
-                    'formation' => $enrollment->training->title,
-
-                ]
-
+            abort(
+                422,
+                'Impossible de supprimer cette inscription : elle possède déjà un paiement.'
             );
 
-            $enrollment->delete();
+        }
 
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | Journal d'activité
+        |--------------------------------------------------------------------------
+        */
 
-    }
+        ActivityLogService::log(
+
+            module: 'enrollments',
+
+            event: 'deleted',
+
+            subject: $enrollment,
+
+            properties: [
+
+                'numero_inscription' =>
+                    $enrollment->enrollment_number,
+
+                'etudiant' =>
+                    $enrollment->student->full_name,
+
+                'formation' =>
+                    $enrollment->training->title,
+
+            ]
+
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Suppression logique
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->delete();
+
+    });
+
+}
+
 }

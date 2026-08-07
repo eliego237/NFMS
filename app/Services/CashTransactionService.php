@@ -35,13 +35,29 @@ class CashTransactionService
             'CASH'
         );
 
-        $nextNumber = (CashTransaction::max('id') ?? 0) + 1;
+        $nextNumber = (
+            CashTransaction::withTrashed()
+                ->lockForUpdate()
+                ->max('id') ?? 0
+        );
 
-        $transactionNumber = sprintf(
-            '%s%s%06d',
-            $prefix,
-            now()->year,
-            $nextNumber
+        do {
+
+            $nextNumber++;
+
+            $transactionNumber = sprintf(
+                '%s%s%06d',
+                $prefix,
+                now()->year,
+                $nextNumber
+            );
+
+        } while (
+
+            CashTransaction::withTrashed()
+                ->where('transaction_number', $transactionNumber)
+                ->exists()
+
         );
 
         /*
@@ -132,13 +148,29 @@ class CashTransactionService
             'CASH'
         );
 
-        $nextNumber = (CashTransaction::max('id') ?? 0) + 1;
+        $nextNumber = (
+            CashTransaction::withTrashed()
+                ->lockForUpdate()
+                ->max('id') ?? 0
+        );
 
-        $transactionNumber = sprintf(
-            '%s%s%06d',
-            $prefix,
-            now()->year,
-            $nextNumber
+        do {
+
+            $nextNumber++;
+
+            $transactionNumber = sprintf(
+                '%s%s%06d',
+                $prefix,
+                now()->year,
+                $nextNumber
+            );
+
+        } while (
+
+            CashTransaction::withTrashed()
+                ->where('transaction_number', $transactionNumber)
+                ->exists()
+
         );
 
         /*

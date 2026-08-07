@@ -169,9 +169,8 @@ class PaymentResource extends JsonResource
 
                         'receipt_number' => $payment->receipt_number,
 
-                        'payment_date' => optional(
-                            $payment->payment_date
-                        )?->format('d/m/Y'),
+                        'payment_date' => optional($this->payment_date)
+    ?->toDateString(),
 
                         'amount' => (float) $payment->amount,
 

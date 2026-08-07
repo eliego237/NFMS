@@ -30,17 +30,11 @@ class AuthController extends ApiController
         // Attribution du rôle
         $user->assignRole('Administrateur');
 
-        // ⭐ Recharge complètement le modèle
+        // Recharge le modèle avec les relations
         $user->refresh()->load('roles', 'permissions');
 
         // Création du token
         $token = $user->createToken('auth_token')->plainTextToken;
-
-        // ⭐ Vérification (à supprimer après le test)
-        // dd([
-        //     'status' => $user->status,
-        //     'resource' => (new UserResource($user))->toArray(request()),
-        // ]);
 
         // Journal d'activité
         ActivityLogService::log(
@@ -91,17 +85,21 @@ class AuthController extends ApiController
             );
         }
 
+        // Suppression des anciens tokens
         $user->tokens()->delete();
 
+        // Nouveau token
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Mise à jour de la dernière connexion
         $user->update([
             'last_login_at' => now(),
         ]);
 
-        // ⭐ Recharge après update
+        // Recharge le modèle avec les relations
         $user->refresh()->load('roles', 'permissions');
 
+        // Journal d'activité
         ActivityLogService::log(
             module: 'auth',
             event: 'login',
@@ -165,3 +163,6 @@ class AuthController extends ApiController
         );
     }
 }
+
+
+

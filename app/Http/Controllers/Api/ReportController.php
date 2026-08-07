@@ -14,40 +14,34 @@ class ReportController extends Controller implements HasMiddleware
      * Middlewares du contrôleur.
      */
     public static function middleware(): array
-    {
-        return [
+{
+    return [
 
-            new Middleware(
-                'permission:reports.view',
-                only: [
-                    'payments',
-                    'expenses',
-                    'cashBook',
-                    'students',
-                    'enrollments',
-                    'financialSummary',
-                ]
-            ),
+        // new Middleware(
+        //     'permission:reports.view',
+        //     only: [
+        //         'payments',
+        //         'expenses',
+        //         'cashBook',
+        //         'students',
+        //         'enrollments',
+        //         'financialSummary',
+        //     ]
+        // ),
 
-        ];
-    }
-
+    ];
+}
     /**
      * Rapport des paiements.
      */
-    public function payments(Request $request)
-    {
-        return response()->json([
-
-            'success' => true,
-
-            'message' => 'Rapport des paiements généré avec succès.',
-
-            'data' => ReportService::payments($request->all()),
-
-        ]);
-    }
-
+   public function payments(Request $request)
+{
+    return response()->json([
+        'success' => true,
+        'message' => 'Rapport des paiements généré avec succès.',
+        'data' => ReportService::payments($request->all()),
+    ]);
+}
     /**
      * Rapport des dépenses.
      */

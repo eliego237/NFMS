@@ -6,6 +6,7 @@ use App\Models\CashTransaction;
 use App\Models\Enrollment;
 use App\Models\Expense;
 use App\Models\Payment;
+use App\Models\PaymentMethod;
 use App\Models\Student;
 use Illuminate\Support\Facades\Cache;
 
@@ -61,89 +62,104 @@ class ReportService
     |--------------------------------------------------------------------------
     */
 
-    public static function payments(array $filters = []): array
-    {
-        $cacheKey = 'report_payments_' . md5(json_encode($filters));
+public static function payments(array $filters = []): array
+{
+    $query = Payment::with([
+        'enrollment.student',
+        'enrollment.training',
+        'paymentMethod',
+        'receiver',
+    ]);
 
-        return Cache::remember(
-            $cacheKey,
-            self::CACHE_TTL,
-            function () use ($filters) {
+    /*
+    |--------------------------------------------------------------------------
+    | Filtres
+    |--------------------------------------------------------------------------
+    */
 
-                $query = Payment::with([
-                    'enrollment.student',
-                    'enrollment.training',
-                    'paymentMethod',
-                    'receiver',
-                ]);
+    $query->when(
+        !empty($filters['payment_method_id']),
+        fn ($q) => $q->where(
+            'payment_method_id',
+            $filters['payment_method_id']
+        )
+    );
 
-                self::applyDateFilter(
-                    $query,
-                    'payment_date',
-                    $filters
-                );
+    $query->when(
+        !empty($filters['training_id']),
+        function ($q) use ($filters) {
 
-                $query->when(
-                    !empty($filters['payment_method_id']),
-                    fn ($q) => $q->where(
-                        'payment_method_id',
-                        $filters['payment_method_id']
-                    )
-                );
+            $q->whereHas(
+                'enrollment',
+                fn ($e) => $e->where(
+                    'training_id',
+                    $filters['training_id']
+                )
+            );
 
-                $query->when(
-                    !empty($filters['student_id']),
-                    fn ($q) => $q->whereHas(
-                        'enrollment',
-                        fn ($e) => $e->where(
-                            'student_id',
-                            $filters['student_id']
-                        )
-                    )
-                );
+        }
+    );
 
-                $query->when(
-                    !empty($filters['training_id']),
-                    fn ($q) => $q->whereHas(
-                        'enrollment',
-                        fn ($e) => $e->where(
-                            'training_id',
-                            $filters['training_id']
-                        )
-                    )
-                );
+    $query->when(
+        !empty($filters['date_from']),
+        fn ($q) => $q->whereDate(
+            'payment_date',
+            '>=',
+            $filters['date_from']
+        )
+    );
 
-                return [
+    $query->when(
+        !empty($filters['date_to']),
+        fn ($q) => $q->whereDate(
+            'payment_date',
+            '<=',
+            $filters['date_to']
+        )
+    );
 
-                    'payments' => (clone $query)
-                        ->latest('payment_date')
-                        ->latest('id')
-                        ->paginate(
-                            self::perPage($filters)
-                        ),
+    return [
 
-                    'total_amount' => (clone $query)
-                        ->sum('amount'),
+        /*
+        |--------------------------------------------------------------------------
+        | Liste
+        |--------------------------------------------------------------------------
+        */
 
-                    'total_payments' => (clone $query)
-                        ->count(),
+        'payments' => (clone $query)
+            ->latest('payment_date')
+            ->paginate(self::perPage($filters)),
 
-                    'average_payment' => round(
-                        (clone $query)->avg('amount') ?? 0,
-                        2
-                    ),
+        /*
+        |--------------------------------------------------------------------------
+        | Statistiques
+        |--------------------------------------------------------------------------
+        */
 
-                    'largest_payment' => (clone $query)
-                        ->max('amount'),
+        'total_payments' => (clone $query)->count(),
 
-                    'smallest_payment' => (clone $query)
-                        ->min('amount'),
+        'total_amount' => (clone $query)->sum('amount'),
 
-                ];
-            }
-        );
-    }
+        'today_amount' => (clone $query)
+            ->whereDate('payment_date', today())
+            ->sum('amount'),
 
+        'average_amount' => round(
+            (clone $query)->avg('amount') ?? 0
+        ),
+
+        /*
+        |--------------------------------------------------------------------------
+        | Répartition par moyen de paiement
+        |--------------------------------------------------------------------------
+        */
+
+        'payment_methods' => PaymentMethod::withCount('payments')
+            ->withSum('payments', 'amount')
+            ->get(),
+
+    ];
+}
     /*
     |--------------------------------------------------------------------------
     | Rapport des dépenses
@@ -284,64 +300,85 @@ $expense = (clone $query)
     |--------------------------------------------------------------------------
     */
 
-    public static function students(array $filters = []): array
-    {
-        $cacheKey = 'report_students_' . md5(json_encode($filters));
+public static function students(array $filters = []): array
+{
+    $cacheKey = 'report_students_' . md5(json_encode($filters));
 
-        return Cache::remember(
-            $cacheKey,
-            self::CACHE_TTL,
-            function () use ($filters) {
+    return Cache::remember(
+        $cacheKey,
+        self::CACHE_TTL,
+        function () use ($filters) {
 
-                $query = Student::with([
-                    'latestEnrollment.training',
-                ]);
+            $query = Student::with([
+                'latestEnrollment.training',
+            ]);
 
-                $query->when(
-                    array_key_exists('status', $filters),
-                    fn ($q) => $q->where(
-                        'status',
-                        $filters['status']
-                    )
+            $query->when(
+                array_key_exists('status', $filters),
+                fn ($q) => $q->where(
+                    'status',
+                    $filters['status']
+                )
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Pagination
+            |--------------------------------------------------------------------------
+            */
+
+            $students = (clone $query)
+                ->latest()
+                ->paginate(
+                    self::perPage($filters)
                 );
 
-                $students = (clone $query)
-                    ->latest()
-                    ->paginate(
-                        self::perPage($filters)
-                    );
+            /*
+            |--------------------------------------------------------------------------
+            | Statistiques
+            |--------------------------------------------------------------------------
+            */
 
-                $totalStudents = (clone $query)->count();
+            $totalStudents = (clone $query)->count();
 
-                $activeStudents = (clone $query)
-                    ->where('status', true)
-                    ->count();
+            $activeStudents = (clone $query)
+                ->where('status', true)
+                ->count();
 
-                $inactiveStudents = (clone $query)
-                    ->where('status', false)
-                    ->count();
+            $inactiveStudents = (clone $query)
+                ->where('status', false)
+                ->count();
 
-                return [
+            /*
+            |--------------------------------------------------------------------------
+            | IMPORTANT
+            |--------------------------------------------------------------------------
+            | On convertit le paginator en tableau avant de le mettre
+            | dans le cache afin d'éviter __PHP_Incomplete_Class_Name.
+            |--------------------------------------------------------------------------
+            */
 
-                    'students' => $students,
+            return [
 
-                    'total_students' => $totalStudents,
+                'students' => $students->toArray(),
 
-                    'active_students' => $activeStudents,
+                'total_students' => $totalStudents,
 
-                    'inactive_students' => $inactiveStudents,
+                'active_students' => $activeStudents,
 
-                    'active_percentage' => $totalStudents > 0
-                        ? round(
-                            ($activeStudents / $totalStudents) * 100,
-                            2
-                        )
-                        : 0,
+                'inactive_students' => $inactiveStudents,
 
-                ];
-            }
-        );
-    }
+                'active_percentage' => $totalStudents > 0
+                    ? round(
+                        ($activeStudents / $totalStudents) * 100,
+                        2
+                    )
+                    : 0,
+
+            ];
+        }
+    );
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -349,82 +386,52 @@ $expense = (clone $query)
     |--------------------------------------------------------------------------
     */
 
-    public static function enrollments(array $filters = []): array
-    {
-        $cacheKey = 'report_enrollments_' . md5(json_encode($filters));
+public static function enrollments(array $filters = []): array
+{
+    $query = Enrollment::with([
+        'student',
+        'training',
+        'creator',
+        'payments',
+    ]);
 
-        return Cache::remember(
-            $cacheKey,
-            self::CACHE_TTL,
-            function () use ($filters) {
+    $query->when(
+        !empty($filters['status']),
+        fn ($q) => $q->where('status', $filters['status'])
+    );
 
-                $query = Enrollment::with([
-                    'student',
-                    'training',
-                    'creator',
-                    'payments',
-                ]);
+    $query->when(
+        !empty($filters['training_id']),
+        fn ($q) => $q->where('training_id', $filters['training_id'])
+    );
 
-                $query->when(
-                    !empty($filters['status']),
-                    fn ($q) => $q->where(
-                        'status',
-                        $filters['status']
-                    )
-                );
+    $query->when(
+        !empty($filters['student_id']),
+        fn ($q) => $q->where('student_id', $filters['student_id'])
+    );
 
-                $query->when(
-                    !empty($filters['training_id']),
-                    fn ($q) => $q->where(
-                        'training_id',
-                        $filters['training_id']
-                    )
-                );
+    return [
 
-                $query->when(
-                    !empty($filters['student_id']),
-                    fn ($q) => $q->where(
-                        'student_id',
-                        $filters['student_id']
-                    )
-                );
+        'enrollments' => (clone $query)
+            ->latest()
+            ->paginate(self::perPage($filters)),
 
-                return [
+        'total_enrollments' => (clone $query)->count(),
 
-                    'enrollments' => (clone $query)
-                        ->latest()
-                        ->paginate(
-                            self::perPage($filters)
-                        ),
+        'pending' => (clone $query)->where('status', 'pending')->count(),
 
-                    'total_enrollments' => (clone $query)
-                        ->count(),
+        'partial' => (clone $query)->where('status', 'partial')->count(),
 
-                    'pending' => (clone $query)
-                        ->where('status', 'pending')
-                        ->count(),
+        'paid' => (clone $query)->where('status', 'paid')->count(),
 
-                    'partial' => (clone $query)
-                        ->where('status', 'partial')
-                        ->count(),
+        'total_amount' => (clone $query)->sum('total_amount'),
 
-                    'paid' => (clone $query)
-                        ->where('status', 'paid')
-                        ->count(),
+        'total_paid' => (clone $query)->sum('amount_paid'),
 
-                    'total_amount' => (clone $query)
-                        ->sum('total_amount'),
+        'total_balance' => (clone $query)->sum('balance'),
 
-                    'total_paid' => (clone $query)
-                        ->sum('amount_paid'),
-
-                    'total_balance' => (clone $query)
-                        ->sum('balance'),
-
-                ];
-            }
-        );
-    }
+    ];
+}
 
         /*
     |--------------------------------------------------------------------------

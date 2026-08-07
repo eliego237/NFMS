@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | API Controllers
@@ -23,15 +25,6 @@ use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\TrainingModuleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UtilityController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
-Route::get('/test-token', function (Request $request) {
-    return response()->json([
-        'authorization' => $request->header('Authorization'),
-        'bearerToken' => $request->bearerToken(),
-    ]);
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -40,7 +33,6 @@ Route::get('/test-token', function (Request $request) {
 */
 
 Route::post('/register', [AuthController::class, 'register']);
-
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get(
@@ -55,100 +47,11 @@ Route::get(
 
 /*
 |--------------------------------------------------------------------------
-| Dashboard (Temporairement public)
-|--------------------------------------------------------------------------
-|
-| Cette route est publique uniquement pendant le développement
-| du frontend React.
-| Elle sera replacée dans auth:sanctum une fois
-| l'authentification terminée.
-|
-*/
-
-Route::get(
-    '/dashboard',
-    [DashboardController::class, 'index']
-);
-
-/*
-|--------------------------------------------------------------------------
-| Dashboard Charts (Temporairement publics)
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('dashboard/charts')->group(function () {
-
-    Route::get('/payments', [DashboardChartController::class, 'payments']);
-
-    Route::get('/expenses', [DashboardChartController::class, 'expenses']);
-
-    Route::get('/enrollments', [DashboardChartController::class, 'enrollments']);
-
-    Route::get('/payment-methods', [DashboardChartController::class, 'paymentMethods']);
-
-    Route::get('/trainings', [DashboardChartController::class, 'trainings']);
-
-});
-
-/*
-|--------------------------------------------------------------------------
-| Students (Temporairement publics)
-|--------------------------------------------------------------------------
-|
-| Cette route est publique uniquement pendant le développement
-| du frontend React.
-| Elle sera replacée dans auth:sanctum une fois
-| l'authentification terminée.
-|
-*/
-
-Route::apiResource('students', StudentController::class);
-
-
-/*
-|--------------------------------------------------------------------------
-| Payments (Temporairement publics)
-|--------------------------------------------------------------------------
-|
-| Cette route est publique uniquement pendant le développement
-| du frontend React.
-| Elle sera replacée dans auth:sanctum une fois
-| l'authentification terminée.
-|
-*/
-
-/*
-|--------------------------------------------------------------------------
 | Routes protégées
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-
-/*
-|--------------------------------------------------------------------------
-| Enrollments (Temporairement publics)
-|--------------------------------------------------------------------------
-*/
-
-Route::apiResource('enrollments', EnrollmentController::class);
-
-Route::apiResource('payments', PaymentController::class);
-
-/*
-|--------------------------------------------------------------------------
-| Payment Methods (Temporairement publiques)
-|--------------------------------------------------------------------------
-*/
-
-Route::apiResource('payment-methods', PaymentMethodController::class);
-
-/*
-|--------------------------------------------------------------------------
-| Payments (Temporairement publics)
-|--------------------------------------------------------------------------
-*/
-
 
     /*
     |--------------------------------------------------------------------------
@@ -157,8 +60,47 @@ Route::apiResource('payment-methods', PaymentMethodController::class);
     */
 
     Route::post('/logout', [AuthController::class, 'logout']);
-
     Route::get('/me', [AuthController::class, 'me']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    Route::prefix('dashboard/charts')->group(function () {
+
+        Route::get('/payments', [DashboardChartController::class, 'payments']);
+        Route::get('/expenses', [DashboardChartController::class, 'expenses']);
+        Route::get('/enrollments', [DashboardChartController::class, 'enrollments']);
+        Route::get('/payment-methods', [DashboardChartController::class, 'paymentMethods']);
+        Route::get('/trainings', [DashboardChartController::class, 'trainings']);
+
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ressources principales
+    |--------------------------------------------------------------------------
+    */
+
+    Route::apiResource('students', StudentController::class);
+
+    Route::apiResource('enrollments', EnrollmentController::class);
+
+    Route::apiResource('payments', PaymentController::class);
+
+    Route::apiResource('payment-methods', PaymentMethodController::class);
+
+    Route::apiResource('trainings', TrainingController::class);
+
+    Route::apiResource('training-modules', TrainingModuleController::class);
+
+    Route::apiResource('expenses', ExpenseController::class);
+
+    Route::apiResource('users', UserController::class);
 
     /*
     |--------------------------------------------------------------------------
@@ -167,16 +109,7 @@ Route::apiResource('payment-methods', PaymentMethodController::class);
     */
 
     Route::get('/settings', [SettingController::class, 'index']);
-
     Route::put('/settings', [SettingController::class, 'update']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Utilisateurs
-    |--------------------------------------------------------------------------
-    */
-
-    Route::apiResource('users', UserController::class);
 
     /*
     |--------------------------------------------------------------------------
@@ -185,7 +118,6 @@ Route::apiResource('payment-methods', PaymentMethodController::class);
     */
 
     Route::get('/roles', [UtilityController::class, 'roles']);
-
     Route::get('/permissions', [UtilityController::class, 'permissions']);
 
     /*
@@ -195,20 +127,7 @@ Route::apiResource('payment-methods', PaymentMethodController::class);
     */
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
-
     Route::get('/activity-logs/{activity}', [ActivityLogController::class, 'show']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ressources principales
-    |--------------------------------------------------------------------------
-    */
-
-    Route::apiResource('trainings', TrainingController::class);
-
-    Route::apiResource('training-modules', TrainingModuleController::class);
-
-    Route::apiResource('expenses', ExpenseController::class);
 
     /*
     |--------------------------------------------------------------------------

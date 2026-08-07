@@ -7,7 +7,6 @@ use App\Models\Payment;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
@@ -62,83 +61,72 @@ class PaymentService
             }
 
             /*
-|--------------------------------------------------------------------------
-| Génération du numéro de reçu
-|--------------------------------------------------------------------------
-*/
+            |--------------------------------------------------------------------------
+            | Génération du numéro de reçu
+            |--------------------------------------------------------------------------
+            */
 
-$prefix = Setting::getValue(
-    'receipt_prefix',
-    'REC'
-);
+            $prefix = Setting::getValue(
+                'receipt_prefix',
+                'REC'
+            );
 
-$nextNumber = (
-    Payment::withTrashed()
-        ->lockForUpdate()
-        ->max('id') ?? 0
-);
+            $nextNumber = (
+                Payment::withTrashed()
+                    ->lockForUpdate()
+                    ->max('id') ?? 0
+            );
 
-do {
+            do {
 
-    $nextNumber++;
+                $nextNumber++;
 
-    $receiptNumber = sprintf(
+                $receiptNumber = sprintf(
 
-        '%s%s%06d',
+                    '%s%s%06d',
 
-        $prefix,
+                    $prefix,
 
-        now()->year,
+                    now()->year,
 
-        $nextNumber
+                    $nextNumber
 
-    );
+                );
 
-} while (
+            } while (
 
-    Payment::withTrashed()
-        ->where('receipt_number', $receiptNumber)
-        ->exists()
+                Payment::withTrashed()
+                    ->where('receipt_number', $receiptNumber)
+                    ->exists()
 
-);
+            );
 
-/*
-|--------------------------------------------------------------------------
-| Debug Auth
-|--------------------------------------------------------------------------
-*/
+            /*
+            |--------------------------------------------------------------------------
+            | Création du paiement
+            |--------------------------------------------------------------------------
+            */
 
-Log::info('AUTH DEBUG', [
-    'check' => Auth::check(),
-    'id' => Auth::id(),
-    'user' => Auth::user(),
-]);
+            $payment = Payment::create([
 
-/*
-|--------------------------------------------------------------------------
-| Création du paiement
-|--------------------------------------------------------------------------
-*/
+                'enrollment_id'     => $enrollment->id,
 
-$payment = Payment::create([
+                'receipt_number'    => $receiptNumber,
 
-    'enrollment_id'     => $enrollment->id,
+                'amount'            => $data['amount'],
 
-    'receipt_number'    => $receiptNumber,
+                'payment_method_id' => $data['payment_method_id'],
 
-    'amount'            => $data['amount'],
+                'payment_date'      => $data['payment_date'],
 
-    'payment_method_id' => $data['payment_method_id'],
+                'reference'         => $data['reference'] ?? null,
 
-    'payment_date'      => $data['payment_date'],
+                'notes'             => $data['notes'] ?? null,
 
-    'reference'         => $data['reference'] ?? null,
+                'received_by'       => Auth::id(),
 
-    'notes'             => $data['notes'] ?? null,
+            ]);
 
-    'received_by'       => Auth::id(),
-
-]);
             /*
             |--------------------------------------------------------------------------
             | Mise à jour de l'inscription
@@ -237,94 +225,93 @@ $payment = Payment::create([
     }
 
     /**
- * Supprimer un paiement.
- */
-public static function delete(Payment $payment): void
-{
-    DB::transaction(function () use ($payment) {
+     * Supprimer un paiement.
+     */
+    public static function delete(Payment $payment): void
+    {
+        DB::transaction(function () use ($payment) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Chargement des relations
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Chargement des relations
+            |--------------------------------------------------------------------------
+            */
 
-        $payment->loadMissing([
-            'enrollment.student',
-            'enrollment.training',
-            'cashTransaction',
-        ]);
+            $payment->loadMissing([
+                'enrollment.student',
+                'enrollment.training',
+                'cashTransaction',
+            ]);
 
-        $enrollment = Enrollment::lockForUpdate()->findOrFail(
-            $payment->enrollment_id
-        );
+            $enrollment = Enrollment::lockForUpdate()->findOrFail(
+                $payment->enrollment_id
+            );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Suppression de la transaction de caisse
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Suppression de la transaction de caisse
+            |--------------------------------------------------------------------------
+            */
 
-        if ($payment->cashTransaction) {
+            if ($payment->cashTransaction) {
 
-            $payment->cashTransaction->delete();
+                $payment->cashTransaction->delete();
 
-        }
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Mise à jour de l'inscription
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Mise à jour de l'inscription
+            |--------------------------------------------------------------------------
+            */
 
-        $enrollment->decrement(
-            'amount_paid',
-            $payment->amount
-        );
+            $enrollment->decrement(
+                'amount_paid',
+                $payment->amount
+            );
 
-        $enrollment->refresh();
+            $enrollment->refresh();
 
-        $enrollment->refreshBalance();
+            $enrollment->refreshBalance();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Journal d'activité
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Journal d'activité
+            |--------------------------------------------------------------------------
+            */
 
-        ActivityLogService::log(
+            ActivityLogService::log(
 
-            module: 'payments',
+                module: 'payments',
 
-            event: 'deleted',
+                event: 'deleted',
 
-            subject: $payment,
+                subject: $payment,
 
-            properties: [
+                properties: [
 
-                'recu' => $payment->receipt_number,
+                    'recu' => $payment->receipt_number,
 
-                'montant' => $payment->amount,
+                    'montant' => $payment->amount,
 
-                'etudiant' => $enrollment->student->full_name,
+                    'etudiant' => $enrollment->student->full_name,
 
-                'formation' => $enrollment->training->title,
+                    'formation' => $enrollment->training->title,
 
-                'utilisateur' => Auth::user()?->name,
+                    'utilisateur' => Auth::user()?->name,
 
-            ]
+                ]
 
-        );
+            );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Suppression du paiement
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Suppression du paiement
+            |--------------------------------------------------------------------------
+            */
 
-        $payment->delete();
+            $payment->delete();
 
-    });
-}
-
+        });
+    }
 }
