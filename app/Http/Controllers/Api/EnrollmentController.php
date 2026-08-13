@@ -55,7 +55,7 @@ class EnrollmentController extends Controller implements HasMiddleware
 
             'data' => Enrollment::with([
                 'student',
-                'training',
+                'training.modules',
                 'payments',
                 'creator',
             ])
@@ -98,7 +98,7 @@ class EnrollmentController extends Controller implements HasMiddleware
 
             'data' => $enrollment->load([
                 'student',
-                'training',
+                'training.modules',
                 'payments',
                 'creator',
             ]),
@@ -113,7 +113,6 @@ class EnrollmentController extends Controller implements HasMiddleware
         UpdateEnrollmentRequest $request,
         Enrollment $enrollment
     ) {
-
         $enrollment = EnrollmentService::update(
             $enrollment,
             $request->validated()

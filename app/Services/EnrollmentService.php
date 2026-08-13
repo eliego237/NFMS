@@ -178,103 +178,222 @@ public static function store(array $data): Enrollment
 
     });
 }
-    /**
-     * Modifier une inscription.
-     */
-    public static function update(
-        Enrollment $enrollment,
-        array $data
-    ): Enrollment {
+   /**
+ * Modifier une inscription.
+ */
+public static function update(
+    Enrollment $enrollment,
+    array $data
+): Enrollment {
 
-        return DB::transaction(function () use ($enrollment, $data) {
+    return DB::transaction(function () use ($enrollment, $data) {
 
-            $training = Training::findOrFail(
-                $data['training_id']
-            );
+        /*
+        |--------------------------------------------------------------------------
+        | Vérifier les paiements existants
+        |--------------------------------------------------------------------------
+        */
 
-            $registrationFee = $enrollment->registration_fee;
+        $hasPayments = $enrollment->payments()->exists();
 
-            $trainingFee = $training->price;
+        /*
+        |--------------------------------------------------------------------------
+        | Si un paiement existe, les montants financiers sont verrouillés
+        |--------------------------------------------------------------------------
+        */
 
-            $discount = (float) ($data['discount'] ?? 0);
+        if ($hasPayments) {
 
-            $grossAmount = $registrationFee + $trainingFee;
+            $newDiscount = (float) ($data['discount'] ?? $enrollment->discount);
 
-            if ($discount > $grossAmount) {
+            $currentDiscount = (float) $enrollment->discount;
+
+            if ($newDiscount != $currentDiscount) {
 
                 abort(
                     422,
-                    'La remise ne peut pas être supérieure au montant total.'
+                    'Impossible de modifier la réduction : cette inscription possède déjà un paiement.'
                 );
-
             }
 
-            $totalAmount = $grossAmount - $discount;
+            /*
+            |--------------------------------------------------------------------------
+            | Empêcher également le changement de formation
+            |--------------------------------------------------------------------------
+            */
 
-            $enrollment->update([
+            if (
+                isset($data['training_id']) &&
+                (int) $data['training_id'] !== (int) $enrollment->training_id
+            ) {
 
-                'student_id' => $data['student_id'],
+                abort(
+                    422,
+                    'Impossible de modifier la formation : cette inscription possède déjà un paiement.'
+                );
+            }
+        }
 
-                'training_id' => $training->id,
+        /*
+        |--------------------------------------------------------------------------
+        | Formation
+        |--------------------------------------------------------------------------
+        */
 
-                'training_fee' => $trainingFee,
+        $training = Training::findOrFail(
+            $data['training_id'] ?? $enrollment->training_id
+        );
 
-                'discount' => $discount,
+        /*
+        |--------------------------------------------------------------------------
+        | Frais d'inscription
+        |--------------------------------------------------------------------------
+        */
 
-                'total_amount' => $totalAmount,
+        $registrationFee = (float) $enrollment->registration_fee;
 
-                'academic_year' => $data['academic_year']
-                    ?? Setting::getValue(
-                        'academic_year',
-                        date('Y') . '-' . (date('Y') + 1)
-                    ),
+        /*
+        |--------------------------------------------------------------------------
+        | Prix formation
+        |--------------------------------------------------------------------------
+        */
 
-                'enrolled_at' => $data['enrolled_at'],
+        $trainingFee = (float) $training->price;
 
-                'notes' => $data['notes'] ?? null,
+        /*
+        |--------------------------------------------------------------------------
+        | Réduction
+        |--------------------------------------------------------------------------
+        */
 
-            ]);
+        $discount = $hasPayments
+            ? (float) $enrollment->discount
+            : (float) ($data['discount'] ?? 0);
 
-            $enrollment->refresh();
+        /*
+        |--------------------------------------------------------------------------
+        | Calcul financier
+        |--------------------------------------------------------------------------
+        */
 
-            $enrollment->refreshBalance();
+        $grossAmount = $registrationFee + $trainingFee;
 
-            ActivityLogService::log(
+        if ($discount > $grossAmount) {
 
-                module: 'enrollments',
-
-                event: 'updated',
-
-                subject: $enrollment,
-
-                properties: [
-
-                    'numero_inscription' => $enrollment->enrollment_number,
-
-                    'etudiant' => $enrollment->student->full_name,
-
-                    'formation' => $enrollment->training->title,
-
-                    'statut' => $enrollment->status,
-
-                    'montant_total' => $enrollment->total_amount,
-
-                ]
-
+            abort(
+                422,
+                'La remise ne peut pas être supérieure au montant total.'
             );
+        }
 
-            return $enrollment
-                ->fresh()
-                ->load([
-                    'student',
-                    'training',
-                    'payments',
-                    'creator',
-                ]);
+        $totalAmount = $grossAmount - $discount;
 
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | Protection contre un total inférieur aux paiements existants
+        |--------------------------------------------------------------------------
+        */
 
-    }
+        $amountPaid = (float) $enrollment->amount_paid;
+
+        if ($totalAmount < $amountPaid) {
+
+            abort(
+                422,
+                sprintf(
+                    'Impossible de modifier cette inscription : le nouveau montant total (%s FCFA) est inférieur au montant déjà payé (%s FCFA).',
+                    number_format($totalAmount, 0, ',', ' '),
+                    number_format($amountPaid, 0, ',', ' ')
+                )
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mise à jour
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->update([
+
+            'student_id' => $data['student_id']
+                ?? $enrollment->student_id,
+
+            'training_id' => $training->id,
+
+            'training_fee' => $trainingFee,
+
+            'discount' => $discount,
+
+            'total_amount' => $totalAmount,
+
+            'academic_year' => $data['academic_year']
+                ?? Setting::getValue(
+                    'academic_year',
+                    date('Y') . '-' . (date('Y') + 1)
+                ),
+
+            'enrolled_at' => $data['enrolled_at']
+                ?? $enrollment->enrolled_at,
+
+            'notes' => $data['notes'] ?? $enrollment->notes,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Recalcul du solde
+        |--------------------------------------------------------------------------
+        */
+
+        $enrollment->refresh();
+
+        $enrollment->refreshBalance();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Journal d'activité
+        |--------------------------------------------------------------------------
+        */
+
+        ActivityLogService::log(
+
+            module: 'enrollments',
+
+            event: 'updated',
+
+            subject: $enrollment,
+
+            properties: [
+
+                'numero_inscription' =>
+                    $enrollment->enrollment_number,
+
+                'etudiant' =>
+                    $enrollment->student->full_name,
+
+                'formation' =>
+                    $enrollment->training->title,
+
+                'statut' =>
+                    $enrollment->status,
+
+                'montant_total' =>
+                    $enrollment->total_amount,
+
+            ]
+
+        );
+
+        return $enrollment
+            ->fresh()
+            ->load([
+                'student',
+                'training',
+                'payments',
+                'creator',
+            ]);
+    });
+}
 
 /**
  * Supprimer une inscription.
