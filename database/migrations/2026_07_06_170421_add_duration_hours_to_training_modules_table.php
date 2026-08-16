@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('training_modules', function (Blueprint $table) {
-
-            $table->unsignedInteger('duration_hours')
-                ->default(0)
-                ->after('description');
-
-        });
+        if (!Schema::hasColumn('training_modules', 'duration_hours')) {
+            Schema::table('training_modules', function (Blueprint $table) {
+                $table->unsignedInteger('duration_hours')
+                    ->default(0)
+                    ->after('description');
+            });
+        }
     }
 
     /**
@@ -25,10 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('training_modules', function (Blueprint $table) {
-
-            $table->dropColumn('duration_hours');
-
-        });
+        if (Schema::hasColumn('training_modules', 'duration_hours')) {
+            Schema::table('training_modules', function (Blueprint $table) {
+                $table->dropColumn('duration_hours');
+            });
+        }
     }
 };
