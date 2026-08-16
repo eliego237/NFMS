@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+    if (! Schema::hasIndex('training_modules', 'training_modules_training_id_position_unique')) {
         Schema::table('training_modules', function (Blueprint $table) {
 
             $table->unique([
