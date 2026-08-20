@@ -392,8 +392,6 @@ PAYÉ
 
 <td class="logo">
 
-<img src="{{ $logo }}">
-
 </td>
 
 <td class="school">
