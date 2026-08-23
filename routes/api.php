@@ -51,7 +51,10 @@ Route::get(
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware([
+    'auth:sanctum',
+    'license'
+])->group(function () {
 
     /*
 |--------------------------------------------------------------------------
