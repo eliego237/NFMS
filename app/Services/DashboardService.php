@@ -8,8 +8,8 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Training;
-use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardService
 {
@@ -27,7 +27,6 @@ class DashboardService
             'dashboard.index',
             self::CACHE_TTL,
             function () {
-
                 /*
                 |--------------------------------------------------------------------------
                 | Dates
@@ -58,11 +57,17 @@ class DashboardService
                 |--------------------------------------------------------------------------
                 */
 
-                $expectedRevenue = Enrollment::sum('total_amount');
+                $expectedRevenue = Enrollment::sum(
+                    'total_amount'
+                );
 
-                $collectedRevenue = Enrollment::sum('amount_paid');
+                $collectedRevenue = Enrollment::sum(
+                    'amount_paid'
+                );
 
-                $remainingRevenue = Enrollment::sum('balance');
+                $remainingRevenue = Enrollment::sum(
+                    'balance'
+                );
 
                 $paymentsToday = Payment::whereDate(
                     'payment_date',
@@ -143,7 +148,7 @@ class DashboardService
                     )
                     : 0;
 
-                                    /*
+                /*
                 |--------------------------------------------------------------------------
                 | Dernières inscriptions
                 |--------------------------------------------------------------------------
@@ -152,7 +157,7 @@ class DashboardService
                 $latestEnrollments = Enrollment::query()
                     ->with([
                         'student',
-                        'training',
+                        'trainings',
                     ])
                     ->latest('id')
                     ->limit(5)
@@ -167,7 +172,7 @@ class DashboardService
                 $latestPayments = Payment::query()
                     ->with([
                         'enrollment.student',
-                        'enrollment.training',
+                        'enrollment.trainings',
                         'paymentMethod',
                         'receiver',
                     ])
@@ -201,7 +206,7 @@ class DashboardService
                 $latestTransactions = CashTransaction::query()
                     ->with([
                         'payment.enrollment.student',
-                        'payment.enrollment.training',
+                        'payment.enrollment.trainings',
                         'expense',
                         'paymentMethod',
                         'recorder',
@@ -213,97 +218,108 @@ class DashboardService
 
                 /*
                 |--------------------------------------------------------------------------
+                | Evolution des paiements par mois
+                |--------------------------------------------------------------------------
+                */
+
+                $paymentsChart = [];
+
+                for ($month = 1; $month <= 12; $month++) {
+                    $paymentsChart[] = [
+                        'month' => Carbon::create()
+                            ->month($month)
+                            ->translatedFormat('M'),
+
+                        'amount' => Payment::whereYear(
+                            'payment_date',
+                            $currentYear
+                        )
+                            ->whereMonth(
+                                'payment_date',
+                                $month
+                            )
+                            ->sum('amount'),
+                    ];
+                }
+
+                /*
+                |--------------------------------------------------------------------------
                 | Retour des données
                 |--------------------------------------------------------------------------
                 */
-                
-                 /*
-|--------------------------------------------------------------------------
-| Evolution des paiements par mois
-|--------------------------------------------------------------------------
-*/
 
-$paymentsChart = [];
-
-for ($month = 1; $month <= 12; $month++) {
-
-    $paymentsChart[] = [
-
-        'month' => Carbon::create()
-            ->month($month)
-            ->translatedFormat('M'),
-
-        'amount' => Payment::whereYear(
-                'payment_date',
-                $currentYear
-            )
-            ->whereMonth(
-                'payment_date',
-                $month
-            )
-            ->sum('amount'),
-
-    ];
-
-}
                 return [
-
                     'statistics' => [
+                        'students' =>
+                            $students,
 
-                        'students' => $students,
+                        'trainings' =>
+                            $trainings,
 
-                        'trainings' => $trainings,
+                        'enrollments' =>
+                            $enrollments,
 
-                        'enrollments' => $enrollments,
+                        'pending_enrollments' =>
+                            $pendingEnrollments,
 
-                        'pending_enrollments' => $pendingEnrollments,
+                        'partial_enrollments' =>
+                            $partialEnrollments,
 
-                        'partial_enrollments' => $partialEnrollments,
+                        'paid_enrollments' =>
+                            $paidEnrollments,
 
-                        'paid_enrollments' => $paidEnrollments,
-
-                        'students_with_balance' => $studentsWithBalance,
-
+                        'students_with_balance' =>
+                            $studentsWithBalance,
                     ],
 
-                                        'finance' => [
+                    'finance' => [
+                        'expected_revenue' =>
+                            $expectedRevenue,
 
-                        'expected_revenue' => $expectedRevenue,
+                        'collected_revenue' =>
+                            $collectedRevenue,
 
-                        'collected_revenue' => $collectedRevenue,
+                        'remaining_revenue' =>
+                            $remainingRevenue,
 
-                        'remaining_revenue' => $remainingRevenue,
+                        'payments_today' =>
+                            $paymentsToday,
 
-                        'payments_today' => $paymentsToday,
+                        'payments_month' =>
+                            $paymentsMonth,
 
-                        'payments_month' => $paymentsMonth,
+                        'expenses_month' =>
+                            $expensesMonth,
 
-                        'expenses_month' => $expensesMonth,
+                        'cash_in' =>
+                            $cashIn,
 
-                        'cash_in' => $cashIn,
+                        'cash_out' =>
+                            $cashOut,
 
-                        'cash_out' => $cashOut,
+                        'cash_balance' =>
+                            $cashBalance,
 
-                        'cash_balance' => $cashBalance,
-                        
-                        'payment_rate' => $paymentRate,
-
+                        'payment_rate' =>
+                            $paymentRate,
                     ],
 
-                     'payments_chart' => $paymentsChart,
+                    'payments_chart' =>
+                        $paymentsChart,
 
                     'latest' => [
+                        'enrollments' =>
+                            $latestEnrollments->toArray(),
 
-    'enrollments' => $latestEnrollments->toArray(),
+                        'payments' =>
+                            $latestPayments->toArray(),
 
-    'payments' => $latestPayments->toArray(),
+                        'expenses' =>
+                            $latestExpenses->toArray(),
 
-    'expenses' => $latestExpenses->toArray(),
-
-    'transactions' => $latestTransactions->toArray(),
-
-],
-
+                        'transactions' =>
+                            $latestTransactions->toArray(),
+                    ],
                 ];
             }
         );

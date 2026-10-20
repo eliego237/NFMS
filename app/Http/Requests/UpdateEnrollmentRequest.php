@@ -16,43 +16,19 @@ class UpdateEnrollmentRequest extends FormRequest
 
     /**
      * Règles de validation.
+     *
+     * Seules les observations peuvent être modifiées
+     * après la création de l'inscription.
      */
     public function rules(): array
     {
         return [
-
-            'student_id' => [
-                'required',
-                'exists:students,id',
-            ],
-
-            'training_id' => [
-                'required',
-                'exists:trainings,id',
-            ],
-
-            'discount' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'academic_year' => [
-                'nullable',
-                'string',
-                'max:20',
-            ],
-
-            'enrolled_at' => [
-                'required',
-                'date',
-            ],
-
             'notes' => [
+                'sometimes',
                 'nullable',
                 'string',
+                'max:5000',
             ],
-
         ];
     }
 }

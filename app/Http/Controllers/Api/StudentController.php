@@ -8,35 +8,33 @@ use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Student;
 use App\Services\StudentService;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
 class StudentController extends Controller implements HasMiddleware
 {
     /**
      * Middlewares du contrôleur.
      */
-   public static function middleware(): array
-{
-    // Temporairement désactivé pendant le développement React
-    return [];
-}
+    public static function middleware(): array
+    {
+        // Temporairement désactivé pendant le développement React
+        return [];
+    }
+
     /**
      * Liste des étudiants.
      */
     public function index()
     {
+        $students = Student::with([
+            'latestEnrollment.trainings',
+        ])
+            ->latest()
+            ->paginate(10);
+
         return response()->json([
-
             'success' => true,
-
             'message' => 'Liste des étudiants récupérée avec succès.',
-
-            'data' => Student::with([
-                    'latestEnrollment.training',
-                ])
-                ->latest()
-                ->paginate(10),
-
+            'data' => $students,
         ]);
     }
 
@@ -50,13 +48,9 @@ class StudentController extends Controller implements HasMiddleware
         );
 
         return response()->json([
-
             'success' => true,
-
             'message' => 'Étudiant créé avec succès.',
-
             'data' => $student,
-
         ], 201);
     }
 
@@ -65,17 +59,15 @@ class StudentController extends Controller implements HasMiddleware
      */
     public function show(Student $student)
     {
+        $student->load([
+            'enrollments.trainings',
+            'enrollments.payments',
+        ]);
+
         return response()->json([
-
             'success' => true,
-
             'message' => 'Étudiant récupéré avec succès.',
-
-            'data' => $student->load([
-                'enrollments.training',
-                'enrollments.payments',
-            ]),
-
+            'data' => $student,
         ]);
     }
 
@@ -92,13 +84,9 @@ class StudentController extends Controller implements HasMiddleware
         );
 
         return response()->json([
-
             'success' => true,
-
             'message' => 'Étudiant modifié avec succès.',
-
             'data' => $student,
-
         ]);
     }
 
@@ -108,25 +96,18 @@ class StudentController extends Controller implements HasMiddleware
     public function destroy(Student $student)
     {
         if ($student->enrollments()->exists()) {
-
             return response()->json([
-
                 'success' => false,
-
-                'message' => 'Impossible de supprimer un étudiant ayant des inscriptions.',
-
+                'message' =>
+                    'Impossible de supprimer un étudiant ayant des inscriptions.',
             ], 422);
-
         }
 
         StudentService::delete($student);
 
         return response()->json([
-
             'success' => true,
-
             'message' => 'Étudiant supprimé avec succès.',
-
         ]);
     }
 }

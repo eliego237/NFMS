@@ -5,120 +5,93 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
-class ReportController extends Controller implements HasMiddleware
+class ReportController extends Controller
 {
-    /**
-     * Middlewares du contrôleur.
-     */
-    public static function middleware(): array
-{
-    return [
-
-        // new Middleware(
-        //     'permission:reports.view',
-        //     only: [
-        //         'payments',
-        //         'expenses',
-        //         'cashBook',
-        //         'students',
-        //         'enrollments',
-        //         'financialSummary',
-        //     ]
-        // ),
-
-    ];
-}
     /**
      * Rapport des paiements.
      */
-   public function payments(Request $request)
-{
-    return response()->json([
-        'success' => true,
-        'message' => 'Rapport des paiements généré avec succès.',
-        'data' => ReportService::payments($request->all()),
-    ]);
-}
-    /**
-     * Rapport des dépenses.
-     */
-    public function expenses(Request $request)
+    public function payments(Request $request): JsonResponse
     {
-        return response()->json([
-
-            'success' => true,
-
-            'message' => 'Rapport des dépenses généré avec succès.',
-
-            'data' => ReportService::expenses($request->all()),
-
-        ]);
-    }
-
-    /**
-     * Journal de caisse.
-     */
-    public function cashBook(Request $request)
-    {
-        return response()->json([
-
-            'success' => true,
-
-            'message' => 'Journal de caisse généré avec succès.',
-
-            'data' => ReportService::cashBook($request->all()),
-
-        ]);
+        return $this->runReport(
+            fn () => ReportService::payments($request->all())
+        );
     }
 
     /**
      * Rapport des étudiants.
      */
-    public function students(Request $request)
+    public function students(Request $request): JsonResponse
     {
-        return response()->json([
-
-            'success' => true,
-
-            'message' => 'Rapport des étudiants généré avec succès.',
-
-            'data' => ReportService::students($request->all()),
-
-        ]);
+        return $this->runReport(
+            fn () => ReportService::students($request->all())
+        );
     }
 
     /**
      * Rapport des inscriptions.
      */
-    public function enrollments(Request $request)
+    public function enrollments(Request $request): JsonResponse
     {
-        return response()->json([
+        return $this->runReport(
+            fn () => ReportService::enrollments($request->all())
+        );
+    }
 
-            'success' => true,
+    /**
+     * Rapport des dépenses.
+     */
+    public function expenses(Request $request): JsonResponse
+    {
+        return $this->runReport(
+            fn () => ReportService::expenses($request->all())
+        );
+    }
 
-            'message' => 'Rapport des inscriptions généré avec succès.',
-
-            'data' => ReportService::enrollments($request->all()),
-
-        ]);
+    /**
+     * Livre de caisse.
+     */
+    public function cashBook(Request $request): JsonResponse
+    {
+        return $this->runReport(
+            fn () => ReportService::cashBook($request->all())
+        );
     }
 
     /**
      * Résumé financier.
      */
-    public function financialSummary(Request $request)
+    public function financialSummary(Request $request): JsonResponse
     {
-        return response()->json([
+        return $this->runReport(
+            fn () => ReportService::financialSummary($request->all())
+        );
+    }
 
-            'success' => true,
+    /**
+     * Exécute un rapport et renvoie une réponse JSON uniforme.
+     */
+    private function runReport(callable $callback): JsonResponse
+    {
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => $callback(),
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Erreur lors de la génération du rapport NFMS', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
 
-            'message' => 'Résumé financier généré avec succès.',
-
-            'data' => ReportService::financialSummary($request->all()),
-
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Impossible de générer le rapport.',
+            ], 500);
+        }
     }
 }

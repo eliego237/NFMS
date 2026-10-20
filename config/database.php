@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Str;
 use Pdo\Mysql;
@@ -31,6 +31,13 @@ return [
     */
 
     'connections' => [
+
+        'sqlite_legacy' => [
+            'driver' => 'sqlite',
+            'database' => database_path('database.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => false,
+        ],
 
         'sqlite' => [
             'driver' => 'sqlite',
@@ -182,3 +189,5 @@ return [
     ],
 
 ];
+
+

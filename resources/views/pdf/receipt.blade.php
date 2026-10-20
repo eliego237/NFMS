@@ -2,10 +2,14 @@
 <html lang="fr">
 
 <head>
+    <meta charset="UTF-8">
 
-<meta charset="UTF-8">
+    <meta
+        http-equiv="Content-Type"
+        content="text/html; charset=UTF-8"
+    >
 
-<title>Reçu de paiement</title>
+    <title>Reçu de paiement</title>
 
 <style>
 
@@ -339,7 +343,140 @@ TABLES
 
 <body>
 
+@php
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSCRIPTION PRINCIPALE
+    |--------------------------------------------------------------------------
+    |
+    | Notre nouvelle architecture utilise une seule inscription
+    | pouvant contenir plusieurs formations.
+    |
+    */
+
+    $enrollment = $payment->enrollment;
+
+    /*
+    |--------------------------------------------------------------------------
+    | ÉTUDIANT
+    |--------------------------------------------------------------------------
+    */
+
+    $student = $enrollment?->student;
+
+    /*
+    |--------------------------------------------------------------------------
+    | FORMATIONS
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT :
+    | On utilise maintenant enrollment->trainings
+    | et non plus enrollment->training.
+    |
+    */
+
+    $trainings = $enrollment?->trainings ?? collect();
+
+    /*
+    |--------------------------------------------------------------------------
+    | CODES DES FORMATIONS
+    |--------------------------------------------------------------------------
+    */
+
+    $codes = $trainings
+        ->pluck('code')
+        ->filter()
+        ->unique()
+        ->implode(' + ');
+
+    /*
+    |--------------------------------------------------------------------------
+    | CATÉGORIES / NOMS DES FORMATIONS
+    |--------------------------------------------------------------------------
+    */
+
+    $categories = $trainings
+        ->map(function ($training) {
+
+            return $training->category
+                ?: $training->title;
+
+        })
+        ->filter()
+        ->unique()
+        ->implode(' + ');
+
+    /*
+    |--------------------------------------------------------------------------
+    | DURÉE TOTALE
+    |--------------------------------------------------------------------------
+    */
+
+    $durationTotal = $trainings->sum(
+        function ($training) {
+
+            return (float) (
+                $training->pivot?->duration_months
+                ?? $training->duration_months
+                ?? 0
+            );
+
+        }
+    );
+
+    $durations = $durationTotal > 0
+        ? $durationTotal . ' mois'
+        : '-';
+
+    /*
+    |--------------------------------------------------------------------------
+    | ANNÉE ACADÉMIQUE
+    |--------------------------------------------------------------------------
+    */
+
+    $academicYear =
+        $enrollment?->academic_year ?? '-';
+
+    /*
+    |--------------------------------------------------------------------------
+    | FINANCES
+    |--------------------------------------------------------------------------
+    |
+    | total_amount correspond au montant net de l'inscription
+    | après remise.
+    |
+    */
+
+    $totalAmount =
+        (float) ($enrollment?->total_amount ?? 0);
+
+    $totalDiscount =
+        (float) ($enrollment?->discount ?? 0);
+
+    $totalPaidAfter =
+        (float) ($enrollment?->amount_paid ?? 0);
+
+    $totalBalance =
+        (float) ($enrollment?->balance ?? 0);
+
+    /*
+    |--------------------------------------------------------------------------
+    | NET À PAYER
+    |--------------------------------------------------------------------------
+    */
+
+    $netToPay = $totalAmount;
+
+@endphp
+
+
 <div class="wrapper">
+
+
+<!-- ==========================================================
+     FILIGRANE
+=========================================================== -->
 
 <div class="watermark">
 
@@ -355,34 +492,23 @@ ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO<br>
 
 NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
 
-ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
-
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-
-ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
-
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-
-ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
-
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-
-ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
-
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-
-ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
-
-NEW FASHION &nbsp;&nbsp; NEW FASHION &nbsp;&nbsp; NEW FASHION
-
-ELIE GO &nbsp;&nbsp; ELIE GO &nbsp;&nbsp; ELIE GO
 </div>
+
+
+<!-- ==========================================================
+     CACHET PAYÉ
+=========================================================== -->
 
 <div class="paid">
 
 PAYÉ
 
 </div>
+
+
+<!-- ==========================================================
+     HEADER
+=========================================================== -->
 
 <div class="header">
 
@@ -404,7 +530,7 @@ NEW FASHION
 
 <div class="school-sub">
 
-Institut de Beauté & Centre de Formation Professionnelle
+Institut de Beauté &amp; Centre de Formation Professionnelle
 
 </div>
 
@@ -452,7 +578,9 @@ REÇU DE PAIEMENT
 
 <div class="receipt-date">
 
-{{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}
+{{ \Carbon\Carbon::parse(
+    $payment->payment_date
+)->format('d/m/Y') }}
 
 </div>
 
@@ -466,252 +594,414 @@ REÇU DE PAIEMENT
 
 </div>
 
+
 <!-- ==========================================================
-    INFORMATIONS PRINCIPALES
+     INFORMATIONS PRINCIPALES
 =========================================================== -->
 
 <table class="table">
 
-    <tr>
+<tr>
 
-        <th width="35%">ÉTUDIANT</th>
+<th width="35%">
+ÉTUDIANT
+</th>
 
-        <th width="30%">FORMATION</th>
+<th width="30%">
+FORMATION
+</th>
 
-        <th width="35%">PAIEMENT</th>
+<th width="35%">
+PAIEMENT
+</th>
 
-    </tr>
+</tr>
 
-    <tr>
 
-        <!-- ================= ETUDIANT ================= -->
+<tr>
 
-        <td>
 
-            <div class="label">Matricule</div>
-            <div class="value">
-                {{ $payment->enrollment->student->matricule }}
-            </div>
+<!-- ================= ETUDIANT ================= -->
 
-            <div class="label">Nom complet</div>
-            <div class="value">
-                {{ $payment->enrollment->student->first_name }}
-                {{ $payment->enrollment->student->last_name }}
-            </div>
+<td>
 
-            <div class="label">Téléphone</div>
-            <div class="value">
-                {{ $payment->enrollment->student->phone }}
-            </div>
+<div class="label">
+Matricule
+</div>
 
-        </td>
+<div class="value">
 
-        <!-- ================= FORMATION ================= -->
+{{ $student?->matricule ?? '-' }}
 
-        <td>
+</div>
 
-            <div class="label">Code Formation</div>
-            <div class="value">
-                {{ $payment->enrollment->training->code }}
-            </div>
 
-            <div class="label">Catégorie</div>
-            <div class="value">
-                {{ $payment->enrollment->training->category }}
-            </div>
+<div class="label">
+Nom complet
+</div>
 
-            <div class="label">Durée</div>
-            <div class="value">
-                {{ $payment->enrollment->training->duration_months }} mois
-            </div>
+<div class="value">
 
-        </td>
+{{ trim(
+    ($student?->first_name ?? '') .
+    ' ' .
+    ($student?->last_name ?? '')
+) ?: '-' }}
 
-        <!-- ================= PAIEMENT ================= -->
+</div>
 
-        <td>
 
-            <div class="label">Montant payé</div>
-            <div class="amount">
-                {{ number_format($payment->amount,0,',',' ') }} FCFA
-            </div>
+<div class="label">
+Téléphone
+</div>
 
-            <div class="label">Mode de paiement</div>
-            <div class="value">
-                {{ $payment->paymentMethod->name }}
-            </div>
+<div class="value">
 
-            <div class="label">Caissier</div>
-            <div class="value">
-                {{ $payment->receiver->name }}
-            </div>
+{{ $student?->phone ?? '-' }}
 
-        </td>
+</div>
 
-    </tr>
+</td>
+
+
+<!-- ================= FORMATION ================= -->
+
+<td>
+
+<div class="label">
+Code Formation
+</div>
+
+<div class="value">
+
+{{ $codes ?: '-' }}
+
+</div>
+
+
+<div class="label">
+Catégorie
+</div>
+
+<div class="value">
+
+{{ $categories ?: '-' }}
+
+</div>
+
+
+<div class="label">
+Durée
+</div>
+
+<div class="value">
+
+{{ $durations }}
+
+</div>
+
+</td>
+
+
+<!-- ================= PAIEMENT ================= -->
+
+<td>
+
+<div class="label">
+Montant payé
+</div>
+
+<div class="amount">
+
+{{ number_format(
+    (float) $payment->amount,
+    0,
+    ',',
+    ' '
+) }}
+
+FCFA
+
+</div>
+
+
+<div class="label">
+Mode de paiement
+</div>
+
+<div class="value">
+
+{{ $payment->paymentMethod?->name ?? '-' }}
+
+</div>
+
+
+<div class="label">
+Caissier
+</div>
+
+<div class="value">
+
+{{ $payment->receiver?->name ?? '-' }}
+
+</div>
+
+</td>
+
+</tr>
 
 </table>
 
 
 <!-- ==========================================================
-    RÉCAPITULATIF FINANCIER
+     RÉCAPITULATIF FINANCIER
 =========================================================== -->
 
 <table class="table">
 
-    <tr>
+<tr>
 
-        <th colspan="7">
+<th colspan="6">
 
-            RÉCAPITULATIF FINANCIER
+RÉCAPITULATIF FINANCIER
 
-        </th>
+</th>
 
-    </tr>
+</tr>
 
-    <tr>
 
-        <td width="18%" class="center">
+<tr>
 
-            <div class="label">N° Inscription</div>
 
-            <div class="value">
-                {{ $payment->enrollment->enrollment_number }}
-            </div>
+<!-- ================= ANNÉE ================= -->
 
-        </td>
+<td width="16%" class="center">
 
-        <td width="14%" class="center">
+<div class="label">
 
-            <div class="label">Année</div>
+Année
 
-            <div class="value">
-                {{ $payment->enrollment->academic_year }}
-            </div>
+</div>
 
-        </td>
+<div class="value">
 
-        <td width="14%" class="center">
+{{ $academicYear }}
 
-            <div class="label">Total</div>
+</div>
 
-            <div class="value">
-                {{ number_format($payment->enrollment->total_amount,0,',',' ') }} FCFA
-            </div>
+</td>
 
-        </td>
 
-        <td width="12%" class="center">
+<!-- ================= TOTAL ================= -->
 
-            <div class="label">Remise</div>
+<td width="17%" class="center">
 
-            <div class="value" style="color:#ff9800;font-weight:bold;">
+<div class="label">
 
-                {{ $payment->enrollment->formatted_discount }}
+Total
 
-            </div>
+</div>
 
-        </td>
+<div class="value">
 
-        <td width="15%" class="center">
+{{ number_format(
+    $totalAmount,
+    0,
+    ',',
+    ' '
+) }}
 
-            <div class="label">Net à payer</div>
+FCFA
 
-            <div class="value">
+</div>
 
-                {{ number_format($payment->enrollment->total_amount - $payment->enrollment->discount_amount,0,',',' ') }} FCFA
+</td>
 
-            </div>
 
-        </td>
+<!-- ================= REMISE ================= -->
 
-        <td width="13%" class="center">
+<td width="14%" class="center">
 
-            <div class="label">Déjà payé</div>
+<div class="label">
 
-            <div class="value" style="color:#198754;font-weight:bold;">
+Remise
 
-                {{ $payment->enrollment->formatted_amount_paid }}
+</div>
 
-            </div>
+<div
+    class="value"
+    style="
+        color:#ff9800;
+        font-weight:bold;
+    "
+>
 
-        </td>
+{{ number_format(
+    $totalDiscount,
+    0,
+    ',',
+    ' '
+) }}
 
-        <td width="14%" class="center">
+FCFA
 
-            <div class="label red">Reste</div>
+</div>
 
-            <div class="red">
+</td>
 
-                {{ $payment->enrollment->formatted_balance }}
 
-            </div>
+<!-- ================= NET À PAYER ================= -->
 
-        </td>
+<td width="18%" class="center">
 
-    </tr>
+<div class="label">
+
+Net à payer
+
+</div>
+
+<div class="value">
+
+{{ number_format(
+    $netToPay,
+    0,
+    ',',
+    ' '
+) }}
+
+FCFA
+
+</div>
+
+</td>
+
+
+<!-- ================= DÉJÀ PAYÉ ================= -->
+
+<td width="17%" class="center">
+
+<div class="label">
+
+Déjà payé
+
+</div>
+
+<div
+    class="value"
+    style="
+        color:#198754;
+        font-weight:bold;
+    "
+>
+
+{{ number_format(
+    $totalPaidAfter,
+    0,
+    ',',
+    ' '
+) }}
+
+FCFA
+
+</div>
+
+</td>
+
+
+<!-- ================= RESTE ================= -->
+
+<td width="18%" class="center">
+
+<div class="label red">
+
+Reste
+
+</div>
+
+<div class="red">
+
+{{ number_format(
+    $totalBalance,
+    0,
+    ',',
+    ' '
+) }}
+
+FCFA
+
+</div>
+
+</td>
+
+</tr>
 
 </table>
+
 
 <!-- ==========================================================
-    OBSERVATIONS & SIGNATURE
+     OBSERVATIONS & SIGNATURE
 =========================================================== -->
 
 <table class="table">
 
-    <tr>
+<tr>
 
-        <th width="70%">
-            OBSERVATIONS
-        </th>
+<th width="70%">
 
-        <th width="30%">
-            SIGNATURE
-        </th>
+OBSERVATIONS
 
-    </tr>
+</th>
 
-    <tr>
+<th width="30%">
 
-            <div class="value">
+SIGNATURE
 
-                Les frais de scolarité ne sont ni remboursables
-                ni transférables.
+</th>
 
-            </div>
+</tr>
 
-            <div class="space"></div>
 
-            <div class="value">
+<tr>
 
-                Toute modification ou falsification rend
-                ce reçu invalide.
+<td width="70%">
 
-            </div>
+<div class="value">
 
-        </td>
+Les frais de scolarité ne sont ni remboursables
+ni transférables.
 
-        <!-- ===========================
-             SIGNATURE
-        ============================ -->
+</div>
 
-        <td class="center">
+<div class="space"></div>
 
-            <div style="margin-top:5px;">
+<div class="value">
 
-                Le Caissier
+Toute modification ou falsification rend
+ce reçu invalide.
 
-            </div>
+</div>
 
-            <br>
+</td>
 
-            ________________________
 
-        </td>
+<td width="30%" class="center">
 
-    </tr>
-    
+<div style="margin-top:5px;">
+
+Le Caissier
+
+</div>
+
+<br>
+
+________________________
+
+</td>
+
+</tr>
+
 </table>
+
 
 </div>
 

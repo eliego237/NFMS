@@ -10,89 +10,42 @@ class PdfService
     /**
      * Générer le reçu PDF.
      */
-    public static function receipt(
-        Payment $payment
-    ) {
-        /*
-        |--------------------------------------------------------------------------
-        | Chargement des relations
-        |--------------------------------------------------------------------------
-        */
-
-        $payment->loadMissing([
-
+    public static function receipt(Payment $payment)
+    {
+        $payment->load([
             'enrollment.student',
-
-            'enrollment.training',
-
+            'enrollment.trainings',
             'paymentMethod',
-
             'receiver',
-
             'cashTransaction',
-
+            'allocations.enrollment.student',
+            'allocations.enrollment.trainings',
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Logo
-        |--------------------------------------------------------------------------
-        */
-
-       $logo = null;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Génération du PDF
-        |--------------------------------------------------------------------------
-        */
+        $logo = self::getLogo();
 
         $pdf = Pdf::loadView(
-
             'pdf.receipt',
-
             [
-
                 'payment' => $payment,
-
                 'logo' => $logo,
-
                 'qrcode' => null,
-
             ]
-
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Configuration DomPDF
-        |--------------------------------------------------------------------------
-        */
+        $pdf->setPaper('A5', 'landscape');
 
-        $pdf->setPaper(
-
-            'A5',
-
-            'landscape'
-
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Retour
-        |--------------------------------------------------------------------------
-        */
+        $pdf->getDomPDF()->getOptions()->set([
+            'isRemoteEnabled' => true,
+            'isHtml5ParserEnabled' => true,
+            'defaultFont' => 'DejaVu Sans',
+        ]);
 
         return $pdf->stream(
-
             sprintf(
-
                 'recu-%s.pdf',
-
                 $payment->receipt_number
-
             )
-
         );
     }
 
@@ -102,23 +55,16 @@ class PdfService
     private static function getLogo(): ?string
     {
         $path = public_path(
-
             'images/logo-small.png'
-
         );
 
         if (! file_exists($path)) {
-
             return null;
-
         }
 
         return 'data:image/png;base64,' .
-
             base64_encode(
-
                 file_get_contents($path)
-
             );
     }
 }

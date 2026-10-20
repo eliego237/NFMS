@@ -47,20 +47,23 @@ class EnrollmentController extends Controller implements HasMiddleware
      */
     public function index()
     {
+        $enrollments = Enrollment::with([
+            'student',
+            'trainings.modules',
+            'payments',
+            'creator',
+        ])
+            ->latest()
+            ->get();
+
         return response()->json([
 
             'success' => true,
 
-            'message' => 'Liste des inscriptions récupérée avec succès.',
+            'message' =>
+                'Liste des inscriptions récupérée avec succès.',
 
-            'data' => Enrollment::with([
-                'student',
-                'training.modules',
-                'payments',
-                'creator',
-            ])
-            ->latest()
-            ->get(),
+            'data' => $enrollments,
 
         ]);
     }
@@ -74,11 +77,19 @@ class EnrollmentController extends Controller implements HasMiddleware
             $request->validated()
         );
 
+        $enrollment->load([
+            'student',
+            'trainings.modules',
+            'payments',
+            'creator',
+        ]);
+
         return response()->json([
 
             'success' => true,
 
-            'message' => 'Inscription créée avec succès.',
+            'message' =>
+                'Inscription créée avec succès.',
 
             'data' => $enrollment,
 
@@ -90,18 +101,21 @@ class EnrollmentController extends Controller implements HasMiddleware
      */
     public function show(Enrollment $enrollment)
     {
+        $enrollment->load([
+            'student',
+            'trainings.modules',
+            'payments',
+            'creator',
+        ]);
+
         return response()->json([
 
             'success' => true,
 
-            'message' => 'Inscription récupérée avec succès.',
+            'message' =>
+                'Inscription récupérée avec succès.',
 
-            'data' => $enrollment->load([
-                'student',
-                'training.modules',
-                'payments',
-                'creator',
-            ]),
+            'data' => $enrollment,
 
         ]);
     }
@@ -118,11 +132,19 @@ class EnrollmentController extends Controller implements HasMiddleware
             $request->validated()
         );
 
+        $enrollment->load([
+            'student',
+            'trainings.modules',
+            'payments',
+            'creator',
+        ]);
+
         return response()->json([
 
             'success' => true,
 
-            'message' => 'Inscription modifiée avec succès.',
+            'message' =>
+                'Inscription modifiée avec succès.',
 
             'data' => $enrollment,
 
@@ -140,7 +162,8 @@ class EnrollmentController extends Controller implements HasMiddleware
 
             'success' => true,
 
-            'message' => 'Inscription supprimée avec succès.',
+            'message' =>
+                'Inscription supprimée avec succès.',
 
         ]);
     }

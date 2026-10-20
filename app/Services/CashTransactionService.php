@@ -72,7 +72,9 @@ class CashTransactionService
 
             'type' => CashTransaction::TYPE_INCOME,
 
-            'category' => 'Paiement formation',
+            'category' => $payment->isRegistration()
+    ? 'Frais d’inscription'
+    : 'Paiement formation',
 
             'amount' => $payment->amount,
 

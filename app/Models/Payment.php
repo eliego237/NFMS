@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Payment extends Model
@@ -14,6 +15,7 @@ class Payment extends Model
     protected $fillable = [
         'enrollment_id',
         'receipt_number',
+        'payment_type',
         'amount',
         'payment_method_id',
         'payment_date',
@@ -28,11 +30,31 @@ class Payment extends Model
     ];
 
     /**
+     * Types de paiement.
+     */
+    public const TYPE_REGISTRATION = 'registration';
+
+    public const TYPE_TRAINING = 'training';
+
+    /**
      * Inscription concernée.
      */
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
+    }
+
+    /**
+     * Allocations du paiement.
+     *
+     * Permet à un paiement d'être réparti
+     * sur plusieurs inscriptions si nécessaire.
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(
+            PaymentAllocation::class
+        );
     }
 
     /**
@@ -48,23 +70,10 @@ class Payment extends Model
      */
     public function receiver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'received_by');
-    }
-
-    /**
-     * Étudiant concerné.
-     */
-    public function student(): BelongsTo
-    {
-        return $this->enrollment->student();
-    }
-
-    /**
-     * Formation concernée.
-     */
-    public function training(): BelongsTo
-    {
-        return $this->enrollment->training();
+        return $this->belongsTo(
+            User::class,
+            'received_by'
+        );
     }
 
     /**
@@ -76,5 +85,33 @@ class Payment extends Model
             CashTransaction::class,
             'payment_id'
         );
+    }
+
+    /**
+     * Vérifie s'il s'agit d'un paiement d'inscription.
+     */
+    public function isRegistration(): bool
+    {
+        return $this->payment_type === self::TYPE_REGISTRATION;
+    }
+
+    /**
+     * Vérifie s'il s'agit d'un paiement de formation.
+     */
+    public function isTraining(): bool
+    {
+        return $this->payment_type === self::TYPE_TRAINING;
+    }
+
+    /**
+     * Libellé du type de paiement.
+     */
+    public function getPaymentTypeLabelAttribute(): string
+    {
+        return match ($this->payment_type) {
+            self::TYPE_REGISTRATION => 'Frais d’inscription',
+            self::TYPE_TRAINING => 'Paiement formation',
+            default => 'Paiement',
+        };
     }
 }

@@ -82,21 +82,6 @@ Route::put(
     [AuthController::class, 'updatePassword']
 );
 
-/*
-|--------------------------------------------------------------------------
-| Profil & sécurité
-|--------------------------------------------------------------------------
-*/
-
-Route::put(
-    '/profile',
-    [AuthController::class, 'updateProfile']
-);
-
-Route::put(
-    '/password',
-    [AuthController::class, 'updatePassword']
-);
     /*
     |--------------------------------------------------------------------------
     | Dashboard

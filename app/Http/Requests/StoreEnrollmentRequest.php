@@ -26,8 +26,15 @@ class StoreEnrollmentRequest extends FormRequest
                 'exists:students,id',
             ],
 
-            'training_id' => [
+            'training_ids' => [
                 'required',
+                'array',
+                'min:1',
+            ],
+
+            'training_ids.*' => [
+                'integer',
+                'distinct',
                 'exists:trainings,id',
             ],
 

@@ -9,12 +9,11 @@ use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\PaymentService;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
 class PaymentController extends Controller implements HasMiddleware
 {
     /**
-     * Middlewares
+     * Middlewares.
      */
     public static function middleware(): array
     {
@@ -22,32 +21,34 @@ class PaymentController extends Controller implements HasMiddleware
     }
 
     /**
-     * Liste des paiements
+     * Liste des paiements.
      */
     public function index()
     {
         $payments = Payment::with([
             'enrollment.student',
-            'enrollment.training',
+            'enrollment.trainings',
+            'allocations.enrollment.student',
+            'allocations.enrollment.trainings',
             'paymentMethod',
             'receiver',
         ])
-        ->latest()
-        ->get();
+            ->latest()
+            ->get();
 
         return response()->json([
-
             'success' => true,
 
-            'message' => 'Liste des paiements récupérée avec succès.',
+            'message' =>
+                'Liste des paiements récupérée avec succès.',
 
-            'data' => PaymentResource::collection($payments),
-
+            'data' =>
+                PaymentResource::collection($payments),
         ]);
     }
 
     /**
-     * Enregistrer un paiement
+     * Enregistrer un paiement.
      */
     public function store(StorePaymentRequest $request)
     {
@@ -55,63 +56,236 @@ class PaymentController extends Controller implements HasMiddleware
             $request->validated()
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Paiement
+        |--------------------------------------------------------------------------
+        */
+
+        $payment = $result['payment'];
+
+        $payment->load([
+            'paymentMethod',
+            'receiver',
+            'enrollment.student',
+            'enrollment.trainings',
+            'allocations.enrollment.student',
+            'allocations.enrollment.trainings',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Réponse de base
+        |--------------------------------------------------------------------------
+        */
+
+        $responseData = [
+            'payment' => new PaymentResource($payment),
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Inscription
+        |--------------------------------------------------------------------------
+        */
+
+        if (isset($result['enrollment'])) {
+
+            $enrollment = $result['enrollment'];
+
+            $enrollment->loadMissing([
+                'student',
+                'trainings',
+                'payments',
+            ]);
+
+            $responseData['enrollment'] = [
+                'id' =>
+                    $enrollment->id,
+
+                'enrollment_number' =>
+                    $enrollment->enrollment_number,
+
+                'academic_year' =>
+                    $enrollment->academic_year,
+
+                'student' => [
+                    'id' =>
+                        $enrollment->student?->id,
+
+                    'matricule' =>
+                        $enrollment->student?->matricule,
+
+                    'full_name' =>
+                        $enrollment->student?->full_name,
+                ],
+
+                'trainings' =>
+                    $enrollment->trainings
+                        ->map(function ($training) {
+
+                            $price = (float) (
+                                $training->pivot->training_fee
+                                ?? $training->price
+                                ?? 0
+                            );
+
+                            return [
+                                'id' =>
+                                    $training->id,
+
+                                'code' =>
+                                    $training->code,
+
+                                'title' =>
+                                    $training->title,
+
+                                'price' =>
+                                    $price,
+                            ];
+                        })
+                        ->values(),
+
+                'training_count' =>
+                    $enrollment->trainings->count(),
+
+                'registration_fee' =>
+                    (float) $enrollment->registration_fee,
+
+                'discount' =>
+                    (float) $enrollment->discount,
+
+                'total_amount' =>
+                    (float) $enrollment->total_amount,
+
+                'amount_paid' =>
+                    (float) $enrollment->amount_paid,
+
+                'balance' =>
+                    (float) $enrollment->balance,
+
+                'status' =>
+                    $enrollment->status,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Paiement groupé / anciennes allocations
+        |--------------------------------------------------------------------------
+        */
+
+        if (isset($result['enrollments'])) {
+
+            $responseData['enrollments'] =
+                $result['enrollments']->map(
+                    function ($enrollment) {
+
+                        $enrollment->loadMissing([
+                            'student',
+                            'trainings',
+                        ]);
+
+                        return [
+
+                            'id' =>
+                                $enrollment->id,
+
+                            'enrollment_number' =>
+                                $enrollment->enrollment_number,
+
+                            'academic_year' =>
+                                $enrollment->academic_year,
+
+                            'student_id' =>
+                                $enrollment->student_id,
+
+                            'student' => [
+                                'id' =>
+                                    $enrollment->student?->id,
+
+                                'matricule' =>
+                                    $enrollment->student?->matricule,
+
+                                'full_name' =>
+                                    $enrollment->student?->full_name,
+                            ],
+
+                            'trainings' =>
+                                $enrollment->trainings
+                                    ->map(function ($training) {
+
+                                        $price = (float) (
+                                            $training->pivot->training_fee
+                                            ?? $training->price
+                                            ?? 0
+                                        );
+
+                                        return [
+                                            'id' =>
+                                                $training->id,
+
+                                            'code' =>
+                                                $training->code,
+
+                                            'title' =>
+                                                $training->title,
+
+                                            'price' =>
+                                                $price,
+                                        ];
+                                    })
+                                    ->values(),
+
+                            'training_count' =>
+                                $enrollment->trainings->count(),
+
+                            'registration_fee' =>
+                                (float) $enrollment->registration_fee,
+
+                            'discount' =>
+                                (float) $enrollment->discount,
+
+                            'total_amount' =>
+                                (float) $enrollment->total_amount,
+
+                            'amount_paid' =>
+                                (float) $enrollment->amount_paid,
+
+                            'balance' =>
+                                (float) $enrollment->balance,
+
+                            'status' =>
+                                $enrollment->status,
+                        ];
+                    }
+                )->values();
+
+            $responseData['group_total'] =
+                $result['group_total'] ?? 0;
+
+            $responseData['group_paid'] =
+                $result['group_paid'] ?? 0;
+
+            $responseData['group_balance'] =
+                $result['group_balance'] ?? 0;
+        }
+
         return response()->json([
 
             'success' => true,
 
-            'message' => 'Paiement enregistré avec succès.',
+            'message' =>
+                'Paiement enregistré avec succès.',
 
-            'data' => [
-
-                'payment' => new PaymentResource(
-                    $result['payment']->load([
-                        'paymentMethod',
-                        'receiver',
-                        'enrollment.student',
-                        'enrollment.training',
-                    ])
-                ),
-
-                'enrollment' => [
-
-                    'id' => $result['enrollment']->id,
-
-                    'enrollment_number' =>
-                        $result['enrollment']->enrollment_number,
-
-                    'registration_fee' =>
-                        $result['enrollment']->registration_fee,
-
-                    'training_fee' =>
-                        $result['enrollment']->training_fee,
-
-                    'discount' =>
-                        $result['enrollment']->discount,
-
-                    'total_amount' =>
-                        $result['enrollment']->total_amount,
-
-                    'amount_paid' =>
-                        $result['enrollment']->amount_paid,
-
-                    'balance' =>
-                        $result['enrollment']->balance,
-
-                    'payment_progress' =>
-                        $result['enrollment']->payment_progress,
-
-                    'formatted_status' =>
-                        $result['enrollment']->formatted_status,
-
-                ],
-
-            ],
+            'data' =>
+                $responseData,
 
         ], 201);
     }
 
     /**
-     * Détails d'un paiement
+     * Détails d'un paiement.
      */
     public function show(Payment $payment)
     {
@@ -123,27 +297,34 @@ class PaymentController extends Controller implements HasMiddleware
 
             'enrollment.student',
 
-            'enrollment.training',
+            'enrollment.trainings',
 
             'enrollment.payments.paymentMethod',
 
             'enrollment.payments.receiver',
 
+            'allocations.enrollment.student',
+
+            'allocations.enrollment.trainings',
+
+            'allocations.enrollment.payments.paymentMethod',
         ]);
 
         return response()->json([
 
             'success' => true,
 
-            'message' => 'Paiement récupéré avec succès.',
+            'message' =>
+                'Paiement récupéré avec succès.',
 
-            'data' => new PaymentResource($payment),
+            'data' =>
+                new PaymentResource($payment),
 
         ]);
     }
 
     /**
-     * Les paiements ne sont pas modifiables
+     * Les paiements ne sont pas modifiables.
      */
     public function update(
         UpdatePaymentRequest $request,
@@ -160,7 +341,7 @@ class PaymentController extends Controller implements HasMiddleware
     }
 
     /**
-     * Supprimer un paiement
+     * Supprimer un paiement.
      */
     public function destroy(Payment $payment)
     {
@@ -170,7 +351,8 @@ class PaymentController extends Controller implements HasMiddleware
 
             'success' => true,
 
-            'message' => 'Paiement supprimé avec succès.',
+            'message' =>
+                'Paiement supprimé avec succès.',
 
         ]);
     }

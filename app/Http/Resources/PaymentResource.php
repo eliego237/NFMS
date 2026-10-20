@@ -7,193 +7,149 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PaymentResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     */
     public function toArray(Request $request): array
     {
         return [
-
             'id' => $this->id,
-
             'receipt_number' => $this->receipt_number,
-
+            'payment_type' => $this->payment_type,
+            'payment_type_label' => $this->payment_type_label,
             'reference' => $this->reference,
-
             'amount' => (float) $this->amount,
+            'formatted_amount' => $this->formatAmount($this->amount),
 
-            'formatted_amount' => number_format(
-                $this->amount,
-                0,
-                ',',
-                ' '
-            ) . ' FCFA',
-
-            'payment_date' => optional($this->payment_date)
-                ?->format('d/m/Y'),
+            'payment_date' => $this->payment_date?->format('Y-m-d'),
+            'payment_date_label' => $this->payment_date?->format('d/m/Y'),
 
             'notes' => $this->notes,
-
-            'created_at' => optional($this->created_at)
-                ?->format('d/m/Y H:i'),
-
-            /*
-            |--------------------------------------------------------------------------
-            | Mode de paiement
-            |--------------------------------------------------------------------------
-            */
+            'created_at' => $this->created_at?->format('d/m/Y H:i'),
 
             'payment_method' => $this->whenLoaded(
                 'paymentMethod',
-                fn () => [
-
-                    'id' => $this->paymentMethod->id,
-
-                    'name' => $this->paymentMethod->name,
-
-                ]
+                fn () => $this->paymentMethod
+                    ? [
+                        'id' => $this->paymentMethod->id,
+                        'name' => $this->paymentMethod->name,
+                    ]
+                    : null
             ),
-
-            /*
-            |--------------------------------------------------------------------------
-            | Utilisateur ayant reçu le paiement
-            |--------------------------------------------------------------------------
-            */
 
             'receiver' => $this->whenLoaded(
                 'receiver',
-                fn () => [
-
-                    'id' => $this->receiver->id,
-
-                    'name' => $this->receiver->name,
-
-                ]
+                fn () => $this->receiver
+                    ? [
+                        'id' => $this->receiver->id,
+                        'name' => $this->receiver->name,
+                    ]
+                    : null
             ),
 
-            /*
-            |--------------------------------------------------------------------------
-            | Inscription
-            |--------------------------------------------------------------------------
-            */
-
             'enrollment' => $this->whenLoaded(
-    'enrollment',
-    fn () => [
-
-        'id' => $this->enrollment->id,
-
-        'enrollment_number' => $this->enrollment->enrollment_number,
-
-        'academic_year' => $this->enrollment->academic_year,
-
-        'registration_fee' => (float) $this->enrollment->registration_fee,
-
-        'training_fee' => (float) $this->enrollment->training_fee,
-
-        'discount' => (float) $this->enrollment->discount,
-
-        'total_amount' => (float) $this->enrollment->total_amount,
-
-        'amount_paid' => (float) $this->enrollment->amount_paid,
-
-        'balance' => (float) $this->enrollment->balance,
-
-        'payment_progress' => $this->enrollment->payment_progress,
-
-        'formatted_status' => $this->enrollment->formatted_status,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Étudiant
-        |--------------------------------------------------------------------------
-        */
-
-        'student' => $this->enrollment->relationLoaded('student')
-            ? [
-
-                'id' => $this->enrollment->student->id,
-
-                'matricule' => $this->enrollment->student->matricule,
-
-                'first_name' => $this->enrollment->student->first_name,
-
-                'last_name' => $this->enrollment->student->last_name,
-
-                'full_name' => $this->enrollment->student->first_name . ' ' .
-                    $this->enrollment->student->last_name,
-
-                'phone' => $this->enrollment->student->phone,
-
-                'email' => $this->enrollment->student->email,
-
-            ]
-            : null,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Formation
-        |--------------------------------------------------------------------------
-        */
-
-        'training' => $this->enrollment->relationLoaded('training')
-            ? [
-
-                'id' => $this->enrollment->training->id,
-
-                'code' => $this->enrollment->training->code,
-
-                'title' => $this->enrollment->training->title,
-
-                'category' => $this->enrollment->training->category,
-
-            ]
-            : null,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Historique des paiements
-        |--------------------------------------------------------------------------
-        */
-
-        'payments' => $this->enrollment->relationLoaded('payments')
-
-            ? $this->enrollment->payments
-                ->sortByDesc('payment_date')
-                ->values()
-                ->map(function ($payment) {
-
-                    return [
-
-                        'id' => $payment->id,
-
-                        'receipt_number' => $payment->receipt_number,
-
-                        'payment_date' => optional($this->payment_date)
-    ?->toDateString(),
-
-                        'amount' => (float) $payment->amount,
-
-                        'formatted_amount' => number_format(
-                            $payment->amount,
-                            0,
-                            ',',
-                            ' '
-                        ) . ' FCFA',
-
-                        'payment_method' => $payment->paymentMethod?->name,
-
-                        'receiver' => $payment->receiver?->name,
-
-                    ];
-
-                })
-
-            : [],
-
-    ]
-),
-
+                'enrollment',
+                fn () => $this->formatEnrollment($this->enrollment)
+            ),
         ];
+    }
+
+    private function formatEnrollment($enrollment): array
+    {
+        return [
+            'id' => $enrollment->id,
+
+            'enrollment_number' => $enrollment->enrollment_number,
+
+            'academic_year' => $enrollment->academic_year,
+
+            'student' => $enrollment->relationLoaded('student')
+                ? [
+                    'id' => $enrollment->student->id,
+                    'matricule' => $enrollment->student->matricule,
+                    'first_name' => $enrollment->student->first_name,
+                    'last_name' => $enrollment->student->last_name,
+                    'full_name' => $enrollment->student->full_name,
+                    'phone' => $enrollment->student->phone,
+                    'email' => $enrollment->student->email,
+                ]
+                : null,
+
+            'trainings' => $enrollment->relationLoaded('trainings')
+                ? $enrollment->trainings
+                    ->map(function ($training) {
+                        $durationMonths = (int) (
+                            $training->pivot->duration_months
+                            ?? $training->duration_months
+                            ?? 0
+                        );
+
+                        $price = (float) (
+                            $training->pivot->training_fee
+                            ?? $training->price
+                            ?? 0
+                        );
+
+                        return [
+                            'id' => $training->id,
+                            'code' => $training->code,
+                            'title' => $training->title,
+                            'category' => $training->category,
+                            'price' => $price,
+                            'formatted_price' =>
+                                $this->formatAmount($price),
+                            'duration_months' => $durationMonths,
+                            'duration_label' =>
+                                $durationMonths > 0
+                                    ? $durationMonths . ' mois'
+                                    : null,
+                            'certificate' => $training->certificate,
+                        ];
+                    })
+                    ->values()
+                : [],
+
+            'financial' => [
+                'registration_fee' =>
+                    (float) $enrollment->registration_fee,
+
+                'discount' =>
+                    (float) $enrollment->discount,
+
+                'total_amount' =>
+                    (float) $enrollment->total_amount,
+
+                'amount_paid' =>
+                    (float) $enrollment->amount_paid,
+
+                'balance' =>
+                    (float) $enrollment->balance,
+            ],
+
+            'status' => [
+                'value' => $enrollment->status,
+                'label' => $this->statusLabel(
+                    $enrollment->status
+                ),
+            ],
+        ];
+    }
+
+    private function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'pending' => 'En attente',
+            'partial' => 'Paiement partiel',
+            'paid' => 'Payé',
+            'cancelled' => 'Annulée',
+            default => ucfirst((string) $status),
+        };
+    }
+
+    private function formatAmount($amount): string
+    {
+        return number_format(
+            (float) $amount,
+            0,
+            ',',
+            ' '
+        ) . ' FCFA';
     }
 }
